@@ -2,7 +2,7 @@ import secrets
 import uuid
 from typing import List
 from fastapi import APIRouter, Depends, status
-from sqlalchemy import func, select
+from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_current_user
@@ -12,7 +12,7 @@ from app.db.session import get_db
 from app.models.event import Event
 from app.models.photo import Photo
 from app.models.user import User
-from app.schemas.event import EventCreate, EventRead
+from app.schemas.event import EventCreate, EventRead, PublicEventRead
 
 router = APIRouter(prefix="/events", tags=["Events"])
 
@@ -25,6 +25,25 @@ def generate_event_slug(name: str) -> str:
     return f"{clean_name}-{random_suffix}" if clean_name else f"event-{random_suffix}"
 
 
+def build_event_metrics_query():
+    """Helper constructing SQL select query for event with aggregated photo status counts."""
+    processed_expr = func.sum(case((Photo.processing_status == "PROCESSED", 1), else_=0))
+    pending_expr = func.sum(case((Photo.processing_status == "PENDING", 1), else_=0))
+    failed_expr = func.sum(case((Photo.processing_status == "FAILED", 1), else_=0))
+
+    return (
+        select(
+            Event,
+            func.count(Photo.id).label("photo_count"),
+            func.coalesce(processed_expr, 0).label("processed_count"),
+            func.coalesce(pending_expr, 0).label("pending_count"),
+            func.coalesce(failed_expr, 0).label("failed_count"),
+        )
+        .outerjoin(Photo, Event.id == Photo.event_id)
+        .group_by(Event.id)
+    )
+
+
 @router.get("", response_model=List[EventRead])
 async def list_user_events(
     current_user: User = Depends(get_current_user),
@@ -32,19 +51,21 @@ async def list_user_events(
 ):
     """Lists all events created by the authenticated owner."""
     stmt = (
-        select(Event, func.count(Photo.id).label("photo_count"))
-        .outerjoin(Photo, Event.id == Photo.event_id)
+        build_event_metrics_query()
         .where(Event.owner_id == current_user.id)
-        .group_by(Event.id)
         .order_by(Event.created_at.desc())
     )
     result = await db.execute(stmt)
     rows = result.all()
 
     events_response = []
-    for event, photo_count in rows:
+    for event, photo_count, processed_count, pending_count, failed_count in rows:
         event_dict = EventRead.model_validate(event).model_dump()
         event_dict["photo_count"] = photo_count
+        event_dict["processed_count"] = processed_count
+        event_dict["pending_count"] = pending_count
+        event_dict["failed_count"] = failed_count
+        event_dict["is_ready"] = photo_count > 0 and pending_count == 0
         events_response.append(EventRead(**event_dict))
 
     return events_response
@@ -72,7 +93,38 @@ async def create_event(
 
     event_dict = EventRead.model_validate(event).model_dump()
     event_dict["photo_count"] = 0
+    event_dict["processed_count"] = 0
+    event_dict["pending_count"] = 0
+    event_dict["failed_count"] = 0
+    event_dict["is_ready"] = False
     return EventRead(**event_dict)
+
+
+@router.get("/public/{slug}", response_model=PublicEventRead)
+async def get_public_event(
+    slug: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Public unauthenticated event lookup for guest landing page /event/{slug}."""
+    stmt = build_event_metrics_query().where(Event.slug == slug)
+    result = await db.execute(stmt)
+    row = result.first()
+
+    if not row:
+        raise NotFoundError("Event not found")
+
+    event, photo_count, processed_count, pending_count, failed_count = row
+
+    return PublicEventRead(
+        id=event.id,
+        name=event.name,
+        slug=event.slug,
+        status=event.status,
+        photo_count=photo_count,
+        processed_count=processed_count,
+        is_ready=photo_count > 0 and pending_count == 0,
+        created_at=event.created_at,
+    )
 
 
 @router.get("/{event_id}", response_model=EventRead)
@@ -81,26 +133,25 @@ async def get_event(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Gets details of an event by ID."""
-    stmt = (
-        select(Event, func.count(Photo.id).label("photo_count"))
-        .outerjoin(Photo, Event.id == Photo.event_id)
-        .where(Event.id == event_id)
-        .group_by(Event.id)
-    )
+    """Gets detailed metrics of an event by ID."""
+    stmt = build_event_metrics_query().where(Event.id == event_id)
     result = await db.execute(stmt)
     row = result.first()
 
     if not row:
         raise NotFoundError("Event not found")
 
-    event, photo_count = row
+    event, photo_count, processed_count, pending_count, failed_count = row
 
     if event.owner_id != current_user.id:
         raise ForbiddenError("You do not have permission to view this event")
 
     event_dict = EventRead.model_validate(event).model_dump()
     event_dict["photo_count"] = photo_count
+    event_dict["processed_count"] = processed_count
+    event_dict["pending_count"] = pending_count
+    event_dict["failed_count"] = failed_count
+    event_dict["is_ready"] = photo_count > 0 and pending_count == 0
     return EventRead(**event_dict)
 
 

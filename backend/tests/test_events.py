@@ -16,6 +16,7 @@ async def test_create_and_list_event(client: AsyncClient, owner1_headers: dict):
     assert event_data["max_photos"] == 150
     assert "slug" in event_data
     event_id = event_data["id"]
+    slug = event_data["slug"]
 
     # 2. List Events
     list_resp = await client.get("/api/v1/events", headers=owner1_headers)
@@ -23,6 +24,15 @@ async def test_create_and_list_event(client: AsyncClient, owner1_headers: dict):
     events = list_resp.json()
     assert len(events) == 1
     assert events[0]["id"] == event_id
+    assert events[0]["photo_count"] == 0
+
+    # 3. Public Event Lookup (unauthenticated)
+    pub_resp = await client.get(f"/api/v1/events/public/{slug}")
+    assert pub_resp.status_code == 200
+    pub_data = pub_resp.json()
+    assert pub_data["name"] == "Summer Gala 2026"
+    assert pub_data["slug"] == slug
+    assert pub_data["photo_count"] == 0
 
 
 @pytest.mark.asyncio

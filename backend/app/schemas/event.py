@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -24,7 +24,24 @@ class EventRead(EventBase):
     status: str
     max_photos: int
     photo_count: int = 0
+    processed_count: int = 0
+    pending_count: int = 0
+    failed_count: int = 0
+    is_ready: bool = False
     created_at: datetime
     updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PublicEventRead(BaseModel):
+    id: uuid.UUID
+    name: str
+    slug: str
+    status: str
+    photo_count: int = 0
+    processed_count: int = 0
+    is_ready: bool = False
+    created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
