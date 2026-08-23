@@ -29,9 +29,11 @@ class Settings(BaseSettings):
     R2_ENDPOINT: Optional[str] = None
     STORAGE_PROVIDER: str = "mock"  # Options: 'r2', 'mock'
 
-    # Application Business Limits
+    # Application Business & Face Recognition Limits
     MAX_PHOTOS_PER_EVENT: int = 150
     MAX_FILE_SIZE_BYTES: int = 10 * 1024 * 1024  # 10 MB
+    MAX_SELFIE_SIZE_BYTES: int = 5 * 1024 * 1024  # 5 MB
+    FACE_MATCH_THRESHOLD: float = 0.45  # Configurable Cosine Similarity threshold (0.0 to 1.0)
 
     # CORS
     CORS_ORIGINS: list[str] = [
