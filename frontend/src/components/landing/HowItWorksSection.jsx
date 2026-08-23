@@ -18,7 +18,7 @@ export const HowItWorksSection = () => {
       number: '03',
       title: 'FIND YOURSELF',
       description: 'Guests snap or upload a single selfie. SmartSharePhoto scans the event embeddings and presents their personal photo gallery instantly.',
-      image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80',
+      image: '/images/find-yourself.png',
     },
   ]
 
