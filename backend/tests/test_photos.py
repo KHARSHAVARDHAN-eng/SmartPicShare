@@ -1,5 +1,15 @@
+import io
 import pytest
+from PIL import Image
 from httpx import AsyncClient
+from tests.test_face_engine import create_synthetic_test_image
+
+
+def get_tiny_jpg_bytes() -> bytes:
+    img = Image.new("RGB", (10, 10), color="red")
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG")
+    return buf.getvalue()
 
 
 @pytest.mark.asyncio
@@ -13,11 +23,12 @@ async def test_photo_upload_and_listing(client: AsyncClient, owner1_headers: dic
     assert evt_resp.status_code == 201
     event_id = evt_resp.json()["id"]
 
-    # 2. Upload sample image file
+    # 2. Upload valid synthetic JPEG image file
+    valid_jpg_bytes = create_synthetic_test_image(num_faces=1)
     file_payload = [
         (
             "files",
-            ("test_photo.jpg", b"fake-jpg-binary-content-data", "image/jpeg"),
+            ("test_photo.jpg", valid_jpg_bytes, "image/jpeg"),
         )
     ]
     upload_resp = await client.post(
@@ -61,11 +72,12 @@ async def test_enforce_150_photo_limit(client: AsyncClient, owner1_headers: dict
     assert evt_resp.status_code == 201
     event_id = evt_resp.json()["id"]
 
+    tiny_bytes = get_tiny_jpg_bytes()
     # Attempt to upload 151 photos in a single batch
     files_payload = [
         (
             "files",
-            (f"photo_{i}.jpg", b"fake-jpg-binary-content", "image/jpeg"),
+            (f"photo_{i}.jpg", tiny_bytes, "image/jpeg"),
         )
         for i in range(151)
     ]

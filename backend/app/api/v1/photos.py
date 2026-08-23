@@ -1,12 +1,14 @@
 import uuid
+from datetime import datetime, timezone
 from typing import List
-from fastapi import APIRouter, Depends, File, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, Depends, File, UploadFile, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_current_user, get_face, get_storage
 from app.config import settings
 from app.core.exceptions import AppException, ForbiddenError, LimitExceededError, NotFoundError
+from app.core.logging import logger
 from app.db.session import get_db
 from app.models.event import Event
 from app.models.face_embedding import FaceEmbedding
@@ -21,6 +23,47 @@ router = APIRouter(tags=["Photos"])
 ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/jpg", "image/png", "image/webp"}
 
 
+async def process_photo_in_session(
+    photo_id: uuid.UUID,
+    event_id: uuid.UUID,
+    image_bytes: bytes,
+    face_service: FaceRecognitionService,
+    db: AsyncSession,
+):
+    """
+    Executes face detection & 512-dim embedding extraction for a photo.
+    Updates Photo.processing_status to 'PROCESSED' or 'FAILED'.
+    """
+    try:
+        face_results = await face_service.process_photo(photo_id, event_id, image_bytes)
+
+        for face_data in face_results:
+            embedding_record = FaceEmbedding(
+                photo_id=photo_id,
+                event_id=event_id,
+                embedding=face_data["embedding"],
+                bounding_box=face_data["bounding_box"],
+            )
+            db.add(embedding_record)
+
+        stmt = select(Photo).where(Photo.id == photo_id)
+        res = await db.execute(stmt)
+        photo = res.scalar_one_or_none()
+        if photo:
+            photo.processing_status = "PROCESSED"
+
+        await db.commit()
+        logger.info(f"Photo {photo_id} processing completed. {len(face_results)} face(s) indexed.")
+    except Exception as e:
+        logger.error(f"Face processing failed for photo {photo_id}: {str(e)}")
+        stmt = select(Photo).where(Photo.id == photo_id)
+        res = await db.execute(stmt)
+        photo = res.scalar_one_or_none()
+        if photo:
+            photo.processing_status = "FAILED"
+            await db.commit()
+
+
 @router.post(
     "/events/{event_id}/photos",
     response_model=PhotoUploadResponse,
@@ -28,6 +71,7 @@ ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/jpg", "image/png", "image/webp"}
 )
 async def upload_photos(
     event_id: uuid.UUID,
+    background_tasks: BackgroundTasks,
     files: List[UploadFile] = File(...),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -35,8 +79,8 @@ async def upload_photos(
     face_service: FaceRecognitionService = Depends(get_face),
 ):
     """
-    Uploads up to 150 photos to an event.
-    Enforces server-side 150 photo limit and ownership checks.
+    Uploads photos to an event and executes face detection and vector indexing.
+    Enforces server-side 150-photo limit and authorization checks.
     """
     # 1. Fetch event and check ownership
     stmt = select(Event).where(Event.id == event_id)
@@ -79,20 +123,25 @@ async def upload_photos(
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
 
+        # Validate image decoding
+        try:
+            face_service.decode_image_bytes(content)
+        except AppException:
+            raise
+        except Exception as e:
+            raise AppException(f"Failed to decode image '{file.filename}': {str(e)}", status_code=400)
+
         photo_uuid = uuid.uuid4()
         storage_key = f"events/{event_id}/original/{photo_uuid}.jpg"
 
-        # Upload to Cloudflare R2 / Mock Storage
+        # Upload raw file to Cloudflare R2 / Object Storage
         await storage.upload(
             file_bytes=content,
             storage_key=storage_key,
             content_type=file.content_type,
         )
 
-        from datetime import datetime, timezone
         now = datetime.now(timezone.utc)
-
-        # Create photo record in database
         photo = Photo(
             id=photo_uuid,
             event_id=event_id,
@@ -100,22 +149,20 @@ async def upload_photos(
             original_filename=file.filename or f"{photo_uuid}.jpg",
             content_type=file.content_type,
             file_size=len(content),
-            processing_status="PROCESSED",
+            processing_status="PENDING",
             created_at=now,
         )
-
         db.add(photo)
+        await db.flush()
 
-        # Asynchronous/Stub face processing integration
-        face_results = await face_service.process_photo(str(photo_uuid), content)
-        for face_data in face_results:
-            embedding_record = FaceEmbedding(
-                photo_id=photo_uuid,
-                event_id=event_id,
-                embedding=face_data["embedding"],
-                bounding_box=face_data["bounding_box"],
-            )
-            db.add(embedding_record)
+        # Process photo face recognition
+        await process_photo_in_session(
+            photo_uuid,
+            event_id,
+            content,
+            face_service,
+            db,
+        )
 
         signed_url = await storage.generate_signed_url(storage_key)
         photo_read = PhotoRead.model_validate(photo)
@@ -125,7 +172,7 @@ async def upload_photos(
     await db.commit()
 
     return PhotoUploadResponse(
-        message=f"Successfully uploaded {len(uploaded_photos)} photos",
+        message=f"Successfully uploaded {len(uploaded_photos)} photos. Face processing complete.",
         uploaded_photos=uploaded_photos,
     )
 
@@ -178,7 +225,6 @@ async def delete_photo(
     if not photo:
         raise NotFoundError("Photo not found")
 
-    # Fetch parent event to verify ownership
     event_stmt = select(Event).where(Event.id == photo.event_id)
     event_result = await db.execute(event_stmt)
     event = event_result.scalar_one_or_none()
@@ -186,10 +232,7 @@ async def delete_photo(
     if not event or event.owner_id != current_user.id:
         raise ForbiddenError("You do not have permission to delete this photo")
 
-    # Delete from Object Storage
     await storage.delete(photo.storage_key)
-
-    # Delete from Postgres DB
     await db.delete(photo)
     await db.commit()
     return None
