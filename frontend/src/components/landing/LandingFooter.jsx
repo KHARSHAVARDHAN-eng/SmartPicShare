@@ -36,9 +36,33 @@ export const LandingFooter = () => {
           )}
         </div>
 
-        {/* Right Copyright */}
-        <div className="text-xs font-mono text-charcoal-600">
-          © {new Date().getFullYear()} SmartSharePhoto. All rights reserved.
+        {/* Right Copyright & Creator Credit */}
+        <div className="flex flex-col sm:flex-row items-center space-y-1 sm:space-y-0 sm:space-x-3 text-xs font-mono text-charcoal-600 text-center md:text-right">
+          <span>© {new Date().getFullYear()} SmartSharePhoto.</span>
+          <span className="hidden sm:inline">•</span>
+          <span>
+            Created by{' '}
+            <span className="font-semibold text-charcoal-900">Harshavardhan Katabatthina</span>{' '}
+            (
+            <a
+              href="https://www.linkedin.com/in/harshavardhan-katabatthina/"
+              target="_blank"
+              rel="noreferrer"
+              className="hover:text-charcoal-950 underline transition-colors"
+            >
+              LinkedIn
+            </a>
+            {' · '}
+            <a
+              href="https://github.com/KHARSHAVARDHAN-eng"
+              target="_blank"
+              rel="noreferrer"
+              className="hover:text-charcoal-950 underline transition-colors"
+            >
+              GitHub
+            </a>
+            )
+          </span>
         </div>
 
       </div>
