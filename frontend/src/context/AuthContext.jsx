@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
-import { supabase } from '../supabaseClient'
+import { supabase, isSupabaseConfigured } from '../supabaseClient'
 
 const AuthContext = createContext({})
 
@@ -11,10 +11,18 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) {
+      setLoading(false)
+      return
+    }
+
     // 1. Fetch active session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       setUser(session?.user ?? null)
+      setLoading(false)
+    }).catch((err) => {
+      console.warn('Supabase getSession error:', err)
       setLoading(false)
     })
 
@@ -25,10 +33,17 @@ export const AuthProvider = ({ children }) => {
       setLoading(false)
     })
 
-    return () => subscription.unsubscribe()
+    return () => subscription?.unsubscribe()
   }, [])
 
   const signInWithGoogle = async () => {
+    if (!isSupabaseConfigured || !supabase) {
+      const msg = 'Supabase authentication is not configured yet. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in frontend/.env.'
+      alert(msg)
+      console.warn(msg)
+      return
+    }
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -39,6 +54,7 @@ export const AuthProvider = ({ children }) => {
   }
 
   const signOut = async () => {
+    if (!isSupabaseConfigured || !supabase) return
     const { error } = await supabase.auth.signOut()
     if (error) throw error
   }
@@ -57,7 +73,6 @@ export const AuthProvider = ({ children }) => {
     const response = await fetch(url, { ...options, headers })
 
     if (response.status === 401) {
-      // Graceful handling of expired sessions
       console.warn('Session expired or unauthorized request')
     }
 
@@ -70,6 +85,7 @@ export const AuthProvider = ({ children }) => {
         user,
         session,
         loading,
+        isSupabaseConfigured,
         signInWithGoogle,
         signOut,
         fetchWithAuth,
