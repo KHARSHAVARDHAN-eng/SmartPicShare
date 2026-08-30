@@ -201,11 +201,14 @@ async def get_event(
 
 
 
+from fastapi import APIRouter, Depends, Response, status
+
 @router.delete("/{event_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_event(
     event_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
+    storage: StorageService = Depends(get_storage),
 ):
     """Deletes an event and all associated photos and embeddings."""
     stmt = select(Event).where(Event.id == event_id)
@@ -218,6 +221,17 @@ async def delete_event(
     if event.owner_id != current_user.id:
         raise ForbiddenError("You do not have permission to delete this event")
 
+    # Clean up storage files
+    photos_stmt = select(Photo.storage_key).where(Photo.event_id == event_id)
+    photos_res = await db.execute(photos_stmt)
+    keys = photos_res.scalars().all()
+    for key in keys:
+        try:
+            await storage.delete(key)
+        except Exception:
+            pass
+
     await db.delete(event)
     await db.commit()
-    return None
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
