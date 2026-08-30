@@ -74,10 +74,6 @@ export const DashboardPage = () => {
     const confirmMsg = `Are you sure you want to delete "${eventName || 'this event'}" and all associated photos?\n\nThis action cannot be undone.`
     if (!window.confirm(confirmMsg)) return
 
-    // Optimistic UI update: remove event instantly from state
-    const previousEvents = [...events]
-    setEvents((prev) => prev.filter((evt) => evt.id !== eventId))
-
     try {
       const res = await fetchWithAuth(`/api/v1/events/${eventId}`, {
         method: 'DELETE',
@@ -92,14 +88,14 @@ export const DashboardPage = () => {
         throw new Error(errMsg)
       }
 
-      // Refresh events list from server to ensure perfect sync
+      // Backend deletion verified successful! Remove event from state & reload
+      setEvents((prev) => prev.filter((evt) => evt.id !== eventId))
       await loadEvents()
     } catch (err) {
-      // Revert optimistic update if request failed
-      setEvents(previousEvents)
       alert(`Delete Error: ${err.message}`)
     }
   }
+
 
 
   const filteredEvents = events.filter((evt) =>

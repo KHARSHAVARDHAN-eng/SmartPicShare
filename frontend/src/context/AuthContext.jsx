@@ -3,7 +3,9 @@ import { supabase, isSupabaseConfigured } from '../supabaseClient'
 
 const AuthContext = createContext({})
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+const envApiUrl = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000'
+export const API_BASE_URL = envApiUrl.replace('localhost:8000', '127.0.0.1:8000')
+
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
