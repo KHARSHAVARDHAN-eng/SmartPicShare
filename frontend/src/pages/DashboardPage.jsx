@@ -65,20 +65,42 @@ export const DashboardPage = () => {
     }
   }
 
-  const handleDeleteEvent = async (eventId, e) => {
-    e.stopPropagation()
-    if (!confirm('Are you sure you want to delete this event and all associated photos?')) return
+  const handleDeleteEvent = async (eventId, eventName, e) => {
+    if (e) {
+      e.preventDefault()
+      e.stopPropagation()
+    }
+
+    const confirmMsg = `Are you sure you want to delete "${eventName || 'this event'}" and all associated photos?\n\nThis action cannot be undone.`
+    if (!window.confirm(confirmMsg)) return
+
+    // Optimistic UI update: remove event instantly from state
+    const previousEvents = [...events]
+    setEvents((prev) => prev.filter((evt) => evt.id !== eventId))
 
     try {
       const res = await fetchWithAuth(`/api/v1/events/${eventId}`, {
         method: 'DELETE',
       })
-      if (!res.ok) throw new Error('Failed to delete event')
+
+      if (!res.ok) {
+        let errMsg = 'Failed to delete event'
+        try {
+          const errData = await res.json()
+          errMsg = errData.error?.message || errMsg
+        } catch (_) {}
+        throw new Error(errMsg)
+      }
+
+      // Refresh events list from server to ensure perfect sync
       await loadEvents()
     } catch (err) {
-      alert(err.message)
+      // Revert optimistic update if request failed
+      setEvents(previousEvents)
+      alert(`Delete Error: ${err.message}`)
     }
   }
+
 
   const filteredEvents = events.filter((evt) =>
     evt.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -206,7 +228,7 @@ export const DashboardPage = () => {
                     </span>
 
                     <button
-                      onClick={(e) => handleDeleteEvent(event.id, e)}
+                      onClick={(e) => handleDeleteEvent(event.id, event.name, e)}
                       title="Delete Event"
                       className="text-slate-300 hover:text-red-400 p-1.5 rounded-lg hover:bg-slate-800/80 transition-colors"
                     >

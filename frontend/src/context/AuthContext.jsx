@@ -82,15 +82,25 @@ export const AuthProvider = ({ children }) => {
       headers['Authorization'] = `Bearer ${token}`
     }
 
-    const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`
-    const response = await fetch(url, { ...options, headers })
+    const primaryUrl = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`
 
-    if (response.status === 401) {
-      console.warn('Session expired or unauthorized request')
+    try {
+      const response = await fetch(primaryUrl, { ...options, headers })
+      if (response.status === 401) {
+        console.warn('Session expired or unauthorized request')
+      }
+      return response
+    } catch (err) {
+      if (err instanceof TypeError && primaryUrl.includes('localhost:8000')) {
+        const fallbackUrl = primaryUrl.replace('localhost:8000', '127.0.0.1:8000')
+        console.warn(`Primary fetch to ${primaryUrl} failed. Retrying with fallback ${fallbackUrl}...`)
+        const response = await fetch(fallbackUrl, { ...options, headers })
+        return response
+      }
+      throw err
     }
-
-    return response
   }
+
 
   return (
     <AuthContext.Provider

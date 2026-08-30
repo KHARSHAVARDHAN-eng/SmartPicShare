@@ -167,18 +167,29 @@ export const EventDetailPage = () => {
   }
 
   const handleDeleteEvent = async () => {
-    if (!confirm('Are you sure you want to delete this event and all uploaded photos?')) return
+    const confirmMsg = `Are you sure you want to delete "${event?.name || 'this event'}" and all uploaded photos?\n\nThis action cannot be undone.`
+    if (!window.confirm(confirmMsg)) return
 
     try {
       const res = await fetchWithAuth(`/api/v1/events/${id}`, {
         method: 'DELETE',
       })
-      if (!res.ok) throw new Error('Failed to delete event')
+
+      if (!res.ok) {
+        let errMsg = 'Failed to delete event'
+        try {
+          const errData = await res.json()
+          errMsg = errData.error?.message || errMsg
+        } catch (_) {}
+        throw new Error(errMsg)
+      }
+
       navigate('/dashboard')
     } catch (err) {
-      alert(err.message)
+      alert(`Delete Error: ${err.message}`)
     }
   }
+
 
   if (loading) {
     return (
