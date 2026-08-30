@@ -30,7 +30,7 @@ const AppLayout = () => {
   const isLandingPage = location.pathname === '/'
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className={`min-h-screen flex flex-col ${isLandingPage ? 'bg-ivory-50' : 'bg-slate-50/70 text-slate-900'}`}>
       {!isLandingPage && <Navbar />}
       <main className="flex-1">
         <Routes>

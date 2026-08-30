@@ -181,21 +181,23 @@ export const EventDetailPage = () => {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-slate-400 space-y-3">
-        <Loader2 className="w-8 h-8 animate-spin text-brand-500" />
-        <p className="text-sm font-medium">Loading event management details...</p>
+      <div className="flex flex-col items-center justify-center py-24 text-slate-500 space-y-3">
+        <Loader2 className="w-8 h-8 animate-spin text-slate-900" />
+        <p className="text-xs font-semibold uppercase tracking-wider text-slate-600">
+          Loading event details...
+        </p>
       </div>
     )
   }
 
   if (error || !event) {
     return (
-      <div className="max-w-xl mx-auto py-12 px-4 text-center space-y-4">
-        <div className="w-12 h-12 rounded-full bg-red-500/10 text-red-400 mx-auto flex items-center justify-center">
+      <div className="max-w-xl mx-auto py-16 px-4 text-center space-y-4">
+        <div className="w-12 h-12 rounded-2xl bg-red-100 text-red-600 mx-auto flex items-center justify-center border border-red-200">
           <AlertCircle className="w-6 h-6" />
         </div>
-        <h2 className="text-xl font-bold text-white">{error || 'Event Not Found'}</h2>
-        <Link to="/dashboard" className="inline-flex items-center space-x-2 text-sm text-brand-400 hover:underline">
+        <h2 className="text-xl font-bold text-slate-900">{error || 'Event Not Found'}</h2>
+        <Link to="/dashboard" className="inline-flex items-center space-x-2 text-xs font-semibold text-slate-900 hover:underline">
           <ArrowLeft className="w-4 h-4" />
           <span>Back to Dashboard</span>
         </Link>
@@ -206,38 +208,38 @@ export const EventDetailPage = () => {
   const publicUrl = `${window.location.origin}/event/${event.slug}`
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Top Navigation */}
-      <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-fade-in">
+      {/* Top Navigation Bar */}
+      <div className="flex items-center justify-between border-b border-slate-200/80 pb-4">
         <Link
           to="/dashboard"
-          className="inline-flex items-center space-x-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
+          className="inline-flex items-center space-x-2 text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Back to Events</span>
+          <span>Back to Event Galleries</span>
         </Link>
 
         <div className="flex items-center space-x-3">
           <button
             onClick={() => setShowQR(true)}
-            className="flex items-center space-x-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg transition-colors"
+            className="flex items-center space-x-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold px-3.5 py-2 rounded-xl transition-colors border border-slate-200"
           >
-            <QrCode className="w-4 h-4 text-brand-400" />
+            <QrCode className="w-4 h-4 text-slate-900" />
             <span>Generate QR</span>
           </button>
 
           <button
             onClick={handleCopyLink}
-            className="flex items-center space-x-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg transition-colors"
+            className="flex items-center space-x-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold px-3.5 py-2 rounded-xl transition-colors border border-slate-200"
           >
-            {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+            {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
             <span>{copied ? 'Copied Link' : 'Share Link'}</span>
           </button>
 
           <button
             onClick={handleDeleteEvent}
             title="Delete Event"
-            className="p-2 text-slate-500 hover:text-red-400 hover:bg-slate-800 rounded-lg transition-colors"
+            className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"
           >
             <Trash2 className="w-4 h-4" />
           </button>
@@ -248,26 +250,26 @@ export const EventDetailPage = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center space-x-3">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white">{event.name}</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">{event.name}</h1>
             <span
               className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
                 event.is_ready
-                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                  : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                  : 'bg-amber-50 text-amber-700 border border-amber-200'
               }`}
             >
               <Sparkles className="w-3.5 h-3.5 mr-1.5" />
-              {event.is_ready ? 'Event Ready for Guests' : 'Processing Faces'}
+              {event.is_ready ? 'Ready for Guests' : 'Processing Faces'}
             </span>
           </div>
 
-          <div className="flex items-center space-x-2 text-xs text-slate-400 mt-2">
-            <span>Public URL:</span>
+          <div className="flex items-center space-x-2 text-xs text-slate-500 mt-2">
+            <span>Public Guest Link:</span>
             <a
               href={publicUrl}
               target="_blank"
               rel="noreferrer"
-              className="text-brand-400 hover:underline inline-flex items-center space-x-1 font-mono"
+              className="text-slate-900 font-semibold hover:underline inline-flex items-center space-x-1 font-mono"
             >
               <span>{publicUrl}</span>
               <ExternalLink className="w-3 h-3" />
@@ -279,7 +281,7 @@ export const EventDetailPage = () => {
         <button
           onClick={() => fileInputRef.current?.click()}
           disabled={photos.length >= 150 || uploading}
-          className="flex items-center justify-center space-x-2 bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold px-5 py-3 rounded-xl shadow-lg shadow-brand-600/20 transition-all hover:scale-[1.02] disabled:opacity-50"
+          className="flex items-center justify-center space-x-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold uppercase tracking-wider px-6 py-3 rounded-xl shadow-sm transition-all disabled:opacity-50"
         >
           <Upload className="w-4 h-4" />
           <span>Upload Photos</span>
@@ -297,32 +299,32 @@ export const EventDetailPage = () => {
 
       {/* Status Metrics Bar */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="glass-card p-4">
-          <span className="text-xs text-slate-400 block mb-1">Total Photos</span>
-          <span className="text-2xl font-bold text-white font-mono">{photos.length} / 150</span>
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-sm">
+          <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider block mb-1">Total Photos</span>
+          <span className="text-2xl font-bold text-slate-900 font-mono">{photos.length} / 150</span>
         </div>
 
-        <div className="glass-card p-4">
-          <span className="text-xs text-slate-400 block mb-1">Indexed Faces</span>
-          <span className="text-2xl font-bold text-emerald-400 font-mono">{event.processed_count}</span>
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-sm">
+          <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider block mb-1">Indexed Faces</span>
+          <span className="text-2xl font-bold text-emerald-600 font-mono">{event.processed_count}</span>
         </div>
 
-        <div className="glass-card p-4">
-          <span className="text-xs text-slate-400 block mb-1">Pending</span>
-          <span className="text-2xl font-bold text-amber-400 font-mono">{event.pending_count}</span>
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-sm">
+          <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider block mb-1">Pending</span>
+          <span className="text-2xl font-bold text-amber-600 font-mono">{event.pending_count}</span>
         </div>
 
-        <div className="glass-card p-4">
-          <span className="text-xs text-slate-400 block mb-1">Failed</span>
-          <span className="text-2xl font-bold text-red-400 font-mono">{event.failed_count}</span>
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-sm">
+          <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider block mb-1">Failed</span>
+          <span className="text-2xl font-bold text-red-600 font-mono">{event.failed_count}</span>
         </div>
       </div>
 
       {/* Upload Error Banner */}
       {uploadError && (
-        <div className="bg-red-500/10 border border-red-500/30 text-red-400 p-4 rounded-xl text-sm flex items-center justify-between">
+        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl text-xs flex items-center justify-between shadow-sm">
           <span>{uploadError}</span>
-          <button onClick={() => setUploadError(null)} className="text-slate-400 hover:text-white">
+          <button onClick={() => setUploadError(null)} className="text-red-500 hover:text-red-700">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -330,11 +332,11 @@ export const EventDetailPage = () => {
 
       {/* Upload Progress Indicator */}
       {uploadProgress && (
-        <div className="glass-card p-4 border-brand-500/30 bg-brand-500/5 flex items-center space-x-3">
-          <Loader2 className="w-5 h-5 animate-spin text-brand-500" />
+        <div className="bg-slate-900 text-white p-4 rounded-2xl flex items-center space-x-3 shadow-md">
+          <Loader2 className="w-5 h-5 animate-spin text-white" />
           <div className="flex-1">
-            <span className="text-xs font-medium text-brand-300 block">{uploadProgress.status}</span>
-            <span className="text-[10px] text-slate-400">Processing {uploadProgress.selected} photos in background</span>
+            <span className="text-xs font-semibold uppercase tracking-wider block">{uploadProgress.status}</span>
+            <span className="text-[10px] text-slate-300 font-mono">Processing {uploadProgress.selected} photos</span>
           </div>
         </div>
       )}
@@ -342,19 +344,19 @@ export const EventDetailPage = () => {
       {/* Photo Grid Section */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-white">Event Photographs</h2>
-          <span className="text-xs text-slate-400">Click photo to enlarge</span>
+          <h2 className="text-lg font-bold text-slate-900">Gallery Photographs</h2>
+          <span className="text-xs text-slate-500">Click photo to enlarge</span>
         </div>
 
         {photos.length === 0 ? (
           <div
             onClick={() => fileInputRef.current?.click()}
-            className="border-2 border-dashed border-slate-800 hover:border-slate-700 rounded-2xl p-12 text-center cursor-pointer transition-colors group"
+            className="border-2 border-dashed border-slate-300 hover:border-slate-400 bg-white rounded-2xl p-12 text-center cursor-pointer transition-colors group shadow-xs"
           >
-            <div className="w-12 h-12 rounded-full bg-slate-900 text-slate-400 group-hover:text-brand-400 mx-auto flex items-center justify-center mb-3 transition-colors">
+            <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-700 group-hover:bg-slate-900 group-hover:text-white mx-auto flex items-center justify-center mb-3 transition-colors">
               <Upload className="w-6 h-6" />
             </div>
-            <p className="text-sm font-semibold text-white">Drag & drop or click to upload photos</p>
+            <p className="text-sm font-semibold text-slate-900">Drag & drop or click to upload photos</p>
             <p className="text-xs text-slate-500 mt-1">Supports JPEG, PNG, WEBP up to 10MB (Max 150 photos)</p>
           </div>
         ) : (
@@ -363,7 +365,7 @@ export const EventDetailPage = () => {
               <div
                 key={photo.id}
                 onClick={() => setSelectedImage(photo.public_url)}
-                className="group relative aspect-square bg-slate-900 rounded-xl overflow-hidden border border-slate-800 cursor-pointer shadow-md hover:border-slate-600 transition-all"
+                className="group relative aspect-square bg-slate-100 rounded-2xl overflow-hidden border border-slate-200 cursor-pointer shadow-xs hover:shadow-md transition-all"
               >
                 <img
                   src={photo.public_url}
@@ -375,19 +377,19 @@ export const EventDetailPage = () => {
                 {/* Status Overlay Badge */}
                 <div className="absolute top-2 left-2">
                   {photo.processing_status === 'PROCESSED' && (
-                    <span className="bg-slate-950/80 backdrop-blur-md text-emerald-400 text-[10px] font-semibold px-2 py-0.5 rounded-md flex items-center border border-emerald-500/20">
+                    <span className="bg-slate-900/80 backdrop-blur-md text-emerald-300 text-[10px] font-semibold px-2 py-0.5 rounded-md flex items-center border border-emerald-500/20">
                       <CheckCircle2 className="w-3 h-3 mr-1" />
                       Indexed
                     </span>
                   )}
                   {photo.processing_status === 'PENDING' && (
-                    <span className="bg-slate-950/80 backdrop-blur-md text-amber-400 text-[10px] font-semibold px-2 py-0.5 rounded-md flex items-center border border-amber-500/20">
+                    <span className="bg-slate-900/80 backdrop-blur-md text-amber-300 text-[10px] font-semibold px-2 py-0.5 rounded-md flex items-center border border-amber-500/20">
                       <Clock className="w-3 h-3 mr-1 animate-spin" />
                       Processing
                     </span>
                   )}
                   {photo.processing_status === 'FAILED' && (
-                    <span className="bg-slate-950/80 backdrop-blur-md text-red-400 text-[10px] font-semibold px-2 py-0.5 rounded-md flex items-center border border-red-500/20">
+                    <span className="bg-slate-900/80 backdrop-blur-md text-red-300 text-[10px] font-semibold px-2 py-0.5 rounded-md flex items-center border border-red-500/20">
                       <AlertCircle className="w-3 h-3 mr-1" />
                       Failed
                     </span>
@@ -398,7 +400,7 @@ export const EventDetailPage = () => {
                 <button
                   onClick={(e) => handleDeletePhoto(photo.id, e)}
                   title="Delete Photo"
-                  className="absolute bottom-2 right-2 p-1.5 bg-slate-950/80 backdrop-blur-md text-slate-400 hover:text-red-400 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity border border-slate-800"
+                  className="absolute bottom-2 right-2 p-1.5 bg-slate-900/80 backdrop-blur-md text-slate-300 hover:text-red-400 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity border border-slate-700"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -415,12 +417,12 @@ export const EventDetailPage = () => {
       {selectedImage && (
         <div
           onClick={() => setSelectedImage(null)}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md animate-fade-in"
         >
-          <div className="relative max-w-4xl max-h-[90vh] overflow-hidden rounded-2xl border border-slate-800">
+          <div className="relative max-w-4xl max-h-[90vh] overflow-hidden rounded-2xl border border-slate-200 bg-black">
             <button
               onClick={() => setSelectedImage(null)}
-              className="absolute top-4 right-4 text-white p-2 rounded-full bg-slate-950/60 hover:bg-slate-950 transition-colors"
+              className="absolute top-4 right-4 text-white p-2 rounded-full bg-slate-900/60 hover:bg-slate-900 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>

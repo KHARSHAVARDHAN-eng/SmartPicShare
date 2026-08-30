@@ -42,24 +42,24 @@ export const QRCodeModal = ({ event, onClose }) => {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn">
-      <div className="glass-card max-w-md w-full p-6 relative border border-slate-800 text-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+      <div className="bg-white border border-slate-200 max-w-md w-full p-6 rounded-2xl shadow-2xl relative text-center text-slate-900">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors"
+          className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
         >
           <X className="w-5 h-5" />
         </button>
 
-        <div className="w-12 h-12 rounded-full bg-brand-500/10 text-brand-500 mx-auto flex items-center justify-center mb-3">
+        <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-900 mx-auto flex items-center justify-center mb-3 border border-slate-200">
           <QrIcon className="w-6 h-6" />
         </div>
 
-        <h3 className="text-xl font-bold text-white mb-1">{event.name}</h3>
-        <p className="text-xs text-slate-400 mb-6">Scan QR code or share link for guests</p>
+        <h3 className="text-xl font-bold text-slate-900 mb-1">{event.name}</h3>
+        <p className="text-xs text-slate-500 mb-6">Scan QR code or share link for guests</p>
 
         {/* Printable QR Code Display */}
-        <div className="bg-white p-4 rounded-xl inline-block shadow-xl mb-6">
+        <div className="bg-slate-50 p-4 rounded-2xl inline-block border border-slate-200 shadow-sm mb-6">
           <QRCodeSVG
             id="event-qr-code"
             value={publicUrl}
@@ -69,13 +69,13 @@ export const QRCodeModal = ({ event, onClose }) => {
           />
         </div>
 
-        {/* Action Buttons */}
+        {/* Action Controls */}
         <div className="space-y-3">
-          <div className="flex items-center space-x-2 bg-slate-950 p-2.5 rounded-lg border border-slate-800 text-left">
-            <span className="text-xs text-slate-400 truncate flex-1 font-mono">{publicUrl}</span>
+          <div className="flex items-center space-x-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-left">
+            <span className="text-xs text-slate-700 truncate flex-1 font-mono">{publicUrl}</span>
             <button
               onClick={handleCopyLink}
-              className="flex items-center space-x-1.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-medium px-3 py-1.5 rounded-md transition-colors"
+              className="flex items-center space-x-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors shadow-xs"
             >
               {copied ? (
                 <>
@@ -93,7 +93,7 @@ export const QRCodeModal = ({ event, onClose }) => {
 
           <button
             onClick={handleDownloadQR}
-            className="w-full flex items-center justify-center space-x-2 bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold py-2.5 px-4 rounded-lg transition-colors shadow-lg shadow-brand-600/20"
+            className="w-full flex items-center justify-center space-x-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold py-3 px-4 rounded-xl transition-colors shadow-sm"
           >
             <Download className="w-4 h-4" />
             <span>Download Printable QR (PNG)</span>
