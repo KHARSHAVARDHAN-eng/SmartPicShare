@@ -84,24 +84,35 @@ export const AuthProvider = ({ children }) => {
       headers['Authorization'] = `Bearer ${token}`
     }
 
-    const primaryUrl = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`
-
-    try {
-      const response = await fetch(primaryUrl, { ...options, headers })
-      if (response.status === 401) {
-        console.warn('Session expired or unauthorized request')
+    let candidateUrls = []
+    if (endpoint.startsWith('http')) {
+      candidateUrls.push(endpoint)
+      if (endpoint.includes('localhost:8000')) {
+        candidateUrls.push(endpoint.replace('localhost:8000', '127.0.0.1:8000'))
       }
-      return response
-    } catch (err) {
-      if (err instanceof TypeError && primaryUrl.includes('localhost:8000')) {
-        const fallbackUrl = primaryUrl.replace('localhost:8000', '127.0.0.1:8000')
-        console.warn(`Primary fetch to ${primaryUrl} failed. Retrying with fallback ${fallbackUrl}...`)
-        const response = await fetch(fallbackUrl, { ...options, headers })
-        return response
-      }
-      throw err
+    } else {
+      const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
+      candidateUrls.push(cleanEndpoint)
+      candidateUrls.push(`http://127.0.0.1:8000${cleanEndpoint}`)
+      candidateUrls.push(`http://localhost:8000${cleanEndpoint}`)
     }
+
+    let lastError = null
+    for (const url of candidateUrls) {
+      try {
+        const response = await fetch(url, { ...options, headers })
+        if (response.status === 401) {
+          console.warn('Session expired or unauthorized request')
+        }
+        return response
+      } catch (err) {
+        lastError = err
+      }
+    }
+
+    throw lastError || new TypeError('Failed to fetch')
   }
+
 
 
   return (
