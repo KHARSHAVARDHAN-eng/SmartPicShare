@@ -2,7 +2,7 @@ import secrets
 import uuid
 from typing import List
 from fastapi import APIRouter, Depends, status
-from sqlalchemy import case, func, select
+from sqlalchemy import case, delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_current_user, get_storage
@@ -10,10 +10,12 @@ from app.config import settings
 from app.core.exceptions import ForbiddenError, NotFoundError
 from app.db.session import get_db
 from app.models.event import Event
+from app.models.face_embedding import FaceEmbedding
 from app.models.photo import Photo
 from app.models.user import User
 from app.schemas.event import EventCreate, EventRead, PublicEventRead
 from app.services.storage import StorageService
+
 
 router = APIRouter(prefix="/events", tags=["Events"])
 
@@ -221,7 +223,7 @@ async def delete_event(
     if event.owner_id != current_user.id:
         raise ForbiddenError("You do not have permission to delete this event")
 
-    # Clean up storage files
+    # 1. Clean up storage files
     photos_stmt = select(Photo.storage_key).where(Photo.event_id == event_id)
     photos_res = await db.execute(photos_stmt)
     keys = photos_res.scalars().all()
@@ -231,7 +233,12 @@ async def delete_event(
         except Exception:
             pass
 
-    await db.delete(event)
+    # 2. Explicitly delete child records to avoid foreign key violations & async ORM greenlet issues
+    await db.execute(delete(FaceEmbedding).where(FaceEmbedding.event_id == event_id))
+    await db.execute(delete(Photo).where(Photo.event_id == event_id))
+    await db.execute(delete(Event).where(Event.id == event_id))
     await db.commit()
+
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
 
