@@ -16,8 +16,9 @@ import {
   X,
   ExternalLink,
 } from 'lucide-react'
-import { useAuth } from '../context/AuthContext'
+import { useAuth, getPublicMediaUrl } from '../context/AuthContext'
 import { QRCodeModal } from '../components/QRCodeModal'
+
 
 export const EventDetailPage = () => {
   const { id } = useParams()
@@ -364,11 +365,11 @@ export const EventDetailPage = () => {
             {photos.map((photo) => (
               <div
                 key={photo.id}
-                onClick={() => setSelectedImage(photo.public_url)}
-                className="group relative aspect-square bg-slate-100 rounded-2xl overflow-hidden border border-slate-200 cursor-pointer shadow-xs hover:shadow-md transition-all"
+                onClick={() => setSelectedImage(getPublicMediaUrl(photo.public_url))}
+                className="group relative aspect-square bg-slate-100 rounded-2xl overflow-hidden border border-slate-200 cursor-pointer shadow-sm hover:shadow-md transition-all"
               >
                 <img
-                  src={photo.public_url}
+                  src={getPublicMediaUrl(photo.public_url)}
                   alt={photo.original_filename}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   loading="lazy"

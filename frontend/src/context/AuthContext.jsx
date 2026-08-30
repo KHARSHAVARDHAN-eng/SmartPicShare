@@ -109,4 +109,12 @@ export const AuthProvider = ({ children }) => {
   )
 }
 
+export const getPublicMediaUrl = (url) => {
+  if (!url) return ''
+  if (url.startsWith('http')) return url
+  const baseUrl = API_BASE_URL
+  return `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`
+}
+
 export const useAuth = () => useContext(AuthContext)
+

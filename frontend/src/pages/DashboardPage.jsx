@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Plus, Calendar, Image as ImageIcon, QrCode, Trash2, ArrowRight, Loader2, Sparkles, X, Search } from 'lucide-react'
-import { useAuth } from '../context/AuthContext'
+import { useAuth, getPublicMediaUrl } from '../context/AuthContext'
 import { QRCodeModal } from '../components/QRCodeModal'
+
 
 export const DashboardPage = () => {
   const { fetchWithAuth } = useAuth()
@@ -183,7 +184,7 @@ export const DashboardPage = () => {
                 <div className="aspect-[16/9] bg-gradient-to-br from-slate-900 to-slate-800 rounded-xl overflow-hidden relative p-4 flex flex-col justify-between text-white shadow-sm">
                   {event.cover_photo_url && (
                     <img
-                      src={event.cover_photo_url}
+                      src={getPublicMediaUrl(event.cover_photo_url)}
                       alt={event.name}
                       className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 z-0"
                     />
