@@ -166,11 +166,13 @@ export const EventDetailPage = () => {
     }
   }
 
+  const [deletingEvent, setDeletingEvent] = useState(false)
+
   const handleDeleteEvent = async () => {
-    const confirmMsg = `Are you sure you want to delete "${event?.name || 'this event'}" and all uploaded photos?\n\nThis action cannot be undone.`
-    if (!window.confirm(confirmMsg)) return
+    if (deletingEvent) return
 
     try {
+      setDeletingEvent(true)
       const res = await fetchWithAuth(`/api/v1/events/${id}`, {
         method: 'DELETE',
       })
@@ -187,8 +189,11 @@ export const EventDetailPage = () => {
       navigate('/dashboard')
     } catch (err) {
       alert(`Delete Error: ${err.message}`)
+    } finally {
+      setDeletingEvent(false)
     }
   }
+
 
 
   if (loading) {

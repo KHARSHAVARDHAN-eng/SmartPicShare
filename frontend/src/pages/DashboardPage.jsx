@@ -20,6 +20,10 @@ export const DashboardPage = () => {
   // QR Modal State
   const [selectedQREvent, setSelectedQREvent] = useState(null)
 
+  // Deletion Progress State
+  const [deletingId, setDeletingId] = useState(null)
+
+
   const loadEvents = async () => {
     try {
       setLoading(true)
@@ -65,16 +69,17 @@ export const DashboardPage = () => {
     }
   }
 
-  const handleDeleteEvent = async (eventId, eventName, e) => {
+  const handleDeleteEvent = async (eventId, e) => {
     if (e) {
       e.preventDefault()
       e.stopPropagation()
     }
 
-    const confirmMsg = `Are you sure you want to delete "${eventName || 'this event'}" and all associated photos?\n\nThis action cannot be undone.`
-    if (!window.confirm(confirmMsg)) return
+    if (deletingId) return
 
     try {
+      setDeletingId(eventId)
+
       const res = await fetchWithAuth(`/api/v1/events/${eventId}`, {
         method: 'DELETE',
       })
@@ -93,8 +98,11 @@ export const DashboardPage = () => {
       await loadEvents()
     } catch (err) {
       alert(`Delete Error: ${err.message}`)
+    } finally {
+      setDeletingId(null)
     }
   }
+
 
 
 
@@ -224,11 +232,16 @@ export const DashboardPage = () => {
                     </span>
 
                     <button
-                      onClick={(e) => handleDeleteEvent(event.id, event.name, e)}
+                      disabled={deletingId === event.id}
+                      onClick={(e) => handleDeleteEvent(event.id, e)}
                       title="Delete Event"
-                      className="text-slate-300 hover:text-red-400 p-1.5 rounded-lg hover:bg-slate-800/80 transition-colors"
+                      className="text-slate-300 hover:text-red-400 p-1.5 rounded-lg hover:bg-slate-800/80 transition-colors disabled:opacity-50"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      {deletingId === event.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin text-red-400" />
+                      ) : (
+                        <Trash2 className="w-4 h-4" />
+                      )}
                     </button>
                   </div>
 
