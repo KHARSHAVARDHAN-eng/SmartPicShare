@@ -28,7 +28,13 @@ class MockStorageService(StorageService):
     async def generate_signed_url(
         self, storage_key: str, expires_in: int = 3600
     ) -> str:
-        return f"https://mock-storage.smartsharephoto.local/{storage_key}"
+        return f"/api/v1/media/{storage_key}"
+
+    async def get_file(self, storage_key: str):
+        if storage_key in self._storage:
+            return self._storage[storage_key], self._content_types.get(storage_key, "image/jpeg")
+        return None, None
 
     async def exists(self, storage_key: str) -> bool:
         return storage_key in self._storage
+

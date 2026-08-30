@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import get_current_user
+from app.api.dependencies import get_current_user, get_storage
 from app.config import settings
 from app.core.exceptions import ForbiddenError, NotFoundError
 from app.db.session import get_db
@@ -13,6 +13,7 @@ from app.models.event import Event
 from app.models.photo import Photo
 from app.models.user import User
 from app.schemas.event import EventCreate, EventRead, PublicEventRead
+from app.services.storage import StorageService
 
 router = APIRouter(prefix="/events", tags=["Events"])
 
@@ -48,8 +49,9 @@ def build_event_metrics_query():
 async def list_user_events(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
+    storage: StorageService = Depends(get_storage),
 ):
-    """Lists all events created by the authenticated owner."""
+    """Lists all events created by the authenticated owner with cover photo URLs."""
     stmt = (
         build_event_metrics_query()
         .where(Event.owner_id == current_user.id)
@@ -66,6 +68,19 @@ async def list_user_events(
         event_dict["pending_count"] = pending_count
         event_dict["failed_count"] = failed_count
         event_dict["is_ready"] = photo_count > 0 and pending_count == 0
+
+        if photo_count > 0:
+            latest_photo_stmt = (
+                select(Photo.storage_key)
+                .where(Photo.event_id == event.id)
+                .order_by(Photo.created_at.desc())
+                .limit(1)
+            )
+            latest_res = await db.execute(latest_photo_stmt)
+            latest_key = latest_res.scalar_one_or_none()
+            if latest_key:
+                event_dict["cover_photo_url"] = await storage.generate_signed_url(latest_key)
+
         events_response.append(EventRead(**event_dict))
 
     return events_response
@@ -104,6 +119,7 @@ async def create_event(
 async def get_public_event(
     slug: str,
     db: AsyncSession = Depends(get_db),
+    storage: StorageService = Depends(get_storage),
 ):
     """Public unauthenticated event lookup for guest landing page /event/{slug}."""
     stmt = build_event_metrics_query().where(Event.slug == slug)
@@ -115,6 +131,19 @@ async def get_public_event(
 
     event, photo_count, processed_count, pending_count, failed_count = row
 
+    cover_photo_url = None
+    if photo_count > 0:
+        latest_photo_stmt = (
+            select(Photo.storage_key)
+            .where(Photo.event_id == event.id)
+            .order_by(Photo.created_at.desc())
+            .limit(1)
+        )
+        latest_res = await db.execute(latest_photo_stmt)
+        latest_key = latest_res.scalar_one_or_none()
+        if latest_key:
+            cover_photo_url = await storage.generate_signed_url(latest_key)
+
     return PublicEventRead(
         id=event.id,
         name=event.name,
@@ -123,8 +152,10 @@ async def get_public_event(
         photo_count=photo_count,
         processed_count=processed_count,
         is_ready=photo_count > 0 and pending_count == 0,
+        cover_photo_url=cover_photo_url,
         created_at=event.created_at,
     )
+
 
 
 @router.get("/{event_id}", response_model=EventRead)
@@ -132,6 +163,7 @@ async def get_event(
     event_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
+    storage: StorageService = Depends(get_storage),
 ):
     """Gets detailed metrics of an event by ID."""
     stmt = build_event_metrics_query().where(Event.id == event_id)
@@ -152,7 +184,21 @@ async def get_event(
     event_dict["pending_count"] = pending_count
     event_dict["failed_count"] = failed_count
     event_dict["is_ready"] = photo_count > 0 and pending_count == 0
+
+    if photo_count > 0:
+        latest_photo_stmt = (
+            select(Photo.storage_key)
+            .where(Photo.event_id == event.id)
+            .order_by(Photo.created_at.desc())
+            .limit(1)
+        )
+        latest_res = await db.execute(latest_photo_stmt)
+        latest_key = latest_res.scalar_one_or_none()
+        if latest_key:
+            event_dict["cover_photo_url"] = await storage.generate_signed_url(latest_key)
+
     return EventRead(**event_dict)
+
 
 
 @router.delete("/{event_id}", status_code=status.HTTP_204_NO_CONTENT)

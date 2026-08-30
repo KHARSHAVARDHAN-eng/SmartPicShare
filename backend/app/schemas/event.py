@@ -28,6 +28,7 @@ class EventRead(EventBase):
     pending_count: int = 0
     failed_count: int = 0
     is_ready: bool = False
+    cover_photo_url: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 
@@ -42,6 +43,8 @@ class PublicEventRead(BaseModel):
     photo_count: int = 0
     processed_count: int = 0
     is_ready: bool = False
+    cover_photo_url: Optional[str] = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+

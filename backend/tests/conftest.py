@@ -11,6 +11,9 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from app.api.dependencies import get_db, get_storage
 from app.config import settings
 from app.db.base import Base
+
+settings.ENVIRONMENT = "testing"
+
 from app.main import app
 from app.services.storage.mock import MockStorageService
 

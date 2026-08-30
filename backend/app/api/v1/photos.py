@@ -9,7 +9,7 @@ from app.api.dependencies import get_current_user, get_face, get_storage
 from app.config import settings
 from app.core.exceptions import AppException, ForbiddenError, LimitExceededError, NotFoundError
 from app.core.logging import logger
-from app.db.session import get_db
+from app.db.session import AsyncSessionLocal, get_db
 from app.models.event import Event
 from app.models.face_embedding import FaceEmbedding
 from app.models.photo import Photo
@@ -64,6 +64,25 @@ async def process_photo_in_session(
             await db.commit()
 
 
+async def process_photo_in_background(
+    photo_id: uuid.UUID,
+    event_id: uuid.UUID,
+    image_bytes: bytes,
+    face_service: FaceRecognitionService,
+):
+    """
+    Executes face detection & 512-dim embedding extraction asynchronously in background.
+    """
+    async with AsyncSessionLocal() as db:
+        await process_photo_in_session(
+            photo_id=photo_id,
+            event_id=event_id,
+            image_bytes=image_bytes,
+            face_service=face_service,
+            db=db,
+        )
+
+
 @router.post(
     "/events/{event_id}/photos",
     response_model=PhotoUploadResponse,
@@ -79,7 +98,7 @@ async def upload_photos(
     face_service: FaceRecognitionService = Depends(get_face),
 ):
     """
-    Uploads photos to an event and executes face detection and vector indexing.
+    Uploads photos to an event and schedules face detection and vector indexing.
     Enforces server-side 150-photo limit and authorization checks.
     """
     # 1. Fetch event and check ownership
@@ -134,7 +153,7 @@ async def upload_photos(
         photo_uuid = uuid.uuid4()
         storage_key = f"events/{event_id}/original/{photo_uuid}.jpg"
 
-        # Upload raw file to Cloudflare R2 / Object Storage
+        # Upload raw file to Object Storage
         await storage.upload(
             file_bytes=content,
             storage_key=storage_key,
@@ -153,28 +172,37 @@ async def upload_photos(
             created_at=now,
         )
         db.add(photo)
-        await db.flush()
+        await db.commit()
 
-        # Process photo face recognition
-        await process_photo_in_session(
-            photo_uuid,
-            event_id,
-            content,
-            face_service,
-            db,
-        )
+        # Execute face embedding extraction
+        if settings.ENVIRONMENT == "testing":
+            await process_photo_in_session(
+                photo_uuid,
+                event_id,
+                content,
+                face_service,
+                db,
+            )
+        else:
+            background_tasks.add_task(
+                process_photo_in_background,
+                photo_uuid,
+                event_id,
+                content,
+                face_service,
+            )
 
         signed_url = await storage.generate_signed_url(storage_key)
         photo_read = PhotoRead.model_validate(photo)
         photo_read.public_url = signed_url
         uploaded_photos.append(photo_read)
 
-    await db.commit()
-
     return PhotoUploadResponse(
-        message=f"Successfully uploaded {len(uploaded_photos)} photos. Face processing complete.",
+        message=f"Successfully uploaded {len(uploaded_photos)} photos.",
         uploaded_photos=uploaded_photos,
     )
+
+
 
 
 @router.get("/events/{event_id}/photos", response_model=List[PhotoRead])

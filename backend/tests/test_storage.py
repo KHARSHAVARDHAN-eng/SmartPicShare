@@ -16,8 +16,9 @@ async def test_mock_storage_service_operations():
 
     # Signed URL
     url = await storage.generate_signed_url("test/file.txt")
-    assert "mock-storage" in url
+    assert "/api/v1/media" in url or "mock-storage" in url
     assert "test/file.txt" in url
+
 
     # Delete
     assert await storage.delete("test/file.txt") is True

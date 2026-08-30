@@ -179,9 +179,20 @@ export const DashboardPage = () => {
               className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-slate-300 transition-all flex flex-col justify-between group relative"
             >
               <div className="space-y-4">
-                {/* Event Cover Banner / Placeholder */}
+                {/* Event Cover Banner / Thumbnail */}
                 <div className="aspect-[16/9] bg-gradient-to-br from-slate-900 to-slate-800 rounded-xl overflow-hidden relative p-4 flex flex-col justify-between text-white shadow-sm">
-                  <div className="flex items-center justify-between">
+                  {event.cover_photo_url && (
+                    <img
+                      src={event.cover_photo_url}
+                      alt={event.name}
+                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 z-0"
+                    />
+                  )}
+                  {event.cover_photo_url && (
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-slate-950/40 z-0" />
+                  )}
+
+                  <div className="flex items-center justify-between relative z-10">
                     <span
                       className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold tracking-wide ${
                         event.is_ready
@@ -202,12 +213,13 @@ export const DashboardPage = () => {
                     </button>
                   </div>
 
-                  <div>
-                    <span className="text-[11px] font-mono text-slate-300 block uppercase tracking-wider">
+                  <div className="relative z-10">
+                    <span className="text-[11px] font-mono text-slate-200 block uppercase tracking-wider font-semibold drop-shadow-sm">
                       {event.photo_count} / {event.max_photos} Photos
                     </span>
                   </div>
                 </div>
+
 
                 {/* Card Main Info */}
                 <div className="space-y-1">
