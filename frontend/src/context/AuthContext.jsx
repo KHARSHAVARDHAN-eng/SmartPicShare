@@ -50,7 +50,11 @@ export const AuthProvider = ({ children }) => {
         redirectTo: `${window.location.origin}/dashboard`,
       },
     })
-    if (error) throw error
+    if (error) {
+      console.error('Supabase OAuth error:', error)
+      alert(`Authentication failed: ${error.message}`)
+      throw error
+    }
   }
 
   const signOut = async () => {
@@ -60,7 +64,16 @@ export const AuthProvider = ({ children }) => {
   }
 
   const fetchWithAuth = async (endpoint, options = {}) => {
-    const token = session?.access_token
+    let token = session?.access_token
+    if (!token && isSupabaseConfigured && supabase) {
+      try {
+        const { data } = await supabase.auth.getSession()
+        token = data.session?.access_token
+      } catch (e) {
+        console.warn('Failed to retrieve active session from Supabase:', e)
+      }
+    }
+
     const headers = {
       ...(options.headers || {}),
     }
