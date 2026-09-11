@@ -59,17 +59,12 @@ class InsightFaceEngine(FaceRecognitionService):
 
         return cls._app
 
-    @staticmethod
-    def decode_image_bytes(image_bytes: bytes) -> np.ndarray:
+    def decode_image_bytes(self, image_bytes: bytes) -> np.ndarray:
         """
-        Validates and decodes raw image bytes (JPEG, PNG, WEBP) into a BGR numpy array for OpenCV/InsightFace.
-        Handles corrupted or malformed image data safely.
+        Decodes raw binary image payload into an OpenCV BGR numpy array.
         """
-        if not image_bytes:
-            raise AppException("Empty image payload provided", status_code=400)
-
         try:
-            # 1. Validate with Pillow first to prevent buffer overflow attacks or corrupted headers
+            # 1. Verify PIL decodability
             pil_img = Image.open(io.BytesIO(image_bytes))
             pil_img.verify()
 
@@ -92,7 +87,6 @@ class InsightFaceEngine(FaceRecognitionService):
         app = self._get_insightface_app()
 
         if app is None:
-            # Fallback mock for testing environment without downloaded ONNX weights
             return []
 
         faces = app.get(bgr_arr)
@@ -132,7 +126,6 @@ class InsightFaceEngine(FaceRecognitionService):
 
             embedding = face.embedding
             if embedding is not None:
-                # Ensure float list format
                 vec = embedding.tolist() if isinstance(embedding, np.ndarray) else list(embedding)
                 assert len(vec) == 512, f"Expected 512-dim embedding, got {len(vec)}-dim"
                 embeddings.append(vec)
@@ -163,7 +156,6 @@ class InsightFaceEngine(FaceRecognitionService):
             embedding = face.embedding
             if embedding is not None:
                 vec = embedding.tolist() if isinstance(embedding, np.ndarray) else list(embedding)
-                # L2 normalize vector
                 norm = math.sqrt(sum(x * x for x in vec))
                 if norm > 0:
                     vec = [x / norm for x in vec]
@@ -181,9 +173,6 @@ class InsightFaceEngine(FaceRecognitionService):
     async def extract_selfie_embedding(
         self, image_bytes: bytes, min_confidence: float = 0.50
     ) -> Optional[List[float]]:
-        """
-        Processes a guest selfie image and returns the main face embedding (512-dim).
-        """
         embeddings = await self.generate_embeddings(image_bytes, min_confidence=min_confidence)
         if not embeddings:
             return None
@@ -198,60 +187,70 @@ class InsightFaceEngine(FaceRecognitionService):
         limit: int = 50,
     ) -> List[Dict[str, Any]]:
         """
-        Executes vector similarity search against PostgreSQL pgvector with strict event isolation.
+        Executes vector similarity search with strict event isolation.
+        Tries native pgvector query on PostgreSQL if available, and seamlessly
+        falls back to Python vector cosine similarity calculation if pgvector extension is missing.
         """
         if len(query_embedding) != 512:
             raise AppException(f"Invalid query embedding dimension: expected 512, got {len(query_embedding)}", status_code=400)
 
-        # Check DB dialect
+        # 1. Try native pgvector query on PostgreSQL if extension is active
         bind = db.get_bind()
         if bind.dialect.name == "postgresql":
-            # Native pgvector cosine similarity search
-            # Cosine similarity = 1 - (embedding <=> query_embedding)
-            query_str = """
-                SELECT photo_id, MAX(1 - (embedding <=> :query_vec::vector)) AS similarity
-                FROM face_embeddings
-                WHERE event_id = :event_id
-                  AND (1 - (embedding <=> :query_vec::vector)) >= :threshold
-                GROUP BY photo_id
-                ORDER BY similarity DESC
-                LIMIT :limit
-            """
-            result = await db.execute(
-                text(query_str),
-                {
-                    "event_id": str(event_id),
-                    "query_vec": f"[{','.join(str(x) for x in query_embedding)}]",
-                    "threshold": threshold,
-                    "limit": limit,
-                },
-            )
-            rows = result.all()
-            return [{"photo_id": uuid.UUID(str(row[0])), "similarity": float(row[1])} for row in rows]
-        else:
-            # Fallback for SQLite in unit tests: Calculate cosine similarity in Python
-            stmt = select(FaceEmbedding).where(FaceEmbedding.event_id == event_id)
-            res = await db.execute(stmt)
-            embeddings_records = res.scalars().all()
+            try:
+                query_str = """
+                    SELECT photo_id, MAX(1 - (embedding <=> CAST(:query_vec AS vector))) AS similarity
+                    FROM face_embeddings
+                    WHERE event_id = :event_id
+                      AND (1 - (embedding <=> CAST(:query_vec AS vector))) >= :threshold
+                    GROUP BY photo_id
+                    ORDER BY similarity DESC
+                    LIMIT :limit
+                """
+                vec_str = f"[{','.join(str(x) for x in query_embedding)}]"
+                result = await db.execute(
+                    text(query_str),
+                    {
+                        "event_id": str(event_id),
+                        "query_vec": vec_str,
+                        "threshold": threshold,
+                        "limit": limit,
+                    },
+                )
+                rows = result.all()
+                return [{"photo_id": uuid.UUID(str(row[0])), "similarity": float(row[1])} for row in rows]
+            except Exception as pg_err:
+                await db.rollback()
+                logger.warning(f"Native pgvector query failed ({pg_err}); using Python cosine similarity fallback.")
 
-            matches = {}
-            query_arr = np.array(query_embedding, dtype=np.float32)
-            query_norm = np.linalg.norm(query_arr)
+        # 2. Resilient Python Vector Cosine Similarity Fallback
+        stmt = select(FaceEmbedding).where(FaceEmbedding.event_id == event_id)
+        res = await db.execute(stmt)
+        embeddings_records = res.scalars().all()
 
-            if query_norm == 0:
-                return []
+        if not embeddings_records:
+            return []
 
-            for rec in embeddings_records:
-                emb_arr = np.array(rec.embedding, dtype=np.float32)
-                emb_norm = np.linalg.norm(emb_arr)
-                if emb_norm == 0:
-                    continue
+        matches = {}
+        query_arr = np.array(query_embedding, dtype=np.float32)
+        query_norm = np.linalg.norm(query_arr)
 
-                sim = float(np.dot(query_arr, emb_arr) / (query_norm * emb_norm))
-                if sim >= threshold:
-                    pid = rec.photo_id
-                    if pid not in matches or sim > matches[pid]:
-                        matches[pid] = sim
+        if query_norm == 0:
+            return []
 
-            sorted_matches = sorted(matches.items(), key=lambda item: item[1], reverse=True)[:limit]
-            return [{"photo_id": pid, "similarity": sim} for pid, sim in sorted_matches]
+        for rec in embeddings_records:
+            if not rec.embedding:
+                continue
+            emb_arr = np.array(rec.embedding, dtype=np.float32)
+            emb_norm = np.linalg.norm(emb_arr)
+            if emb_norm == 0:
+                continue
+
+            sim = float(np.dot(query_arr, emb_arr) / (query_norm * emb_norm))
+            if sim >= threshold:
+                pid = rec.photo_id
+                if pid not in matches or sim > matches[pid]:
+                    matches[pid] = sim
+
+        sorted_matches = sorted(matches.items(), key=lambda item: item[1], reverse=True)[:limit]
+        return [{"photo_id": pid, "similarity": sim} for pid, sim in sorted_matches]
