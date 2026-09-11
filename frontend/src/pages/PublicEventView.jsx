@@ -13,22 +13,24 @@ import {
   Square,
   RotateCcw,
   X,
-  ExternalLink,
   ShieldCheck,
   Image as ImageIcon,
 } from 'lucide-react'
 import { useAuth, API_BASE_URL } from '../context/AuthContext'
+import { CameraModal } from '../components/CameraModal'
 
 export const PublicEventView = () => {
   const { slug } = useParams()
   const { fetchWithAuth } = useAuth()
   
   const selfieFileInputRef = useRef(null)
-  const cameraInputRef = useRef(null)
 
   const [event, setEvent] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+
+  // Camera Modal State
+  const [isCameraOpen, setIsCameraOpen] = useState(false)
 
   // Selfie & Matching State
   const [selfieFile, setSelfieFile] = useState(null)
@@ -76,6 +78,12 @@ export const PublicEventView = () => {
     const reader = new FileReader()
     reader.onloadend = () => setSelfiePreview(reader.result)
     reader.readAsDataURL(file)
+  }
+
+  const handleCameraCapture = (file, previewUrl) => {
+    setMatchError(null)
+    setSelfieFile(file)
+    setSelfiePreview(previewUrl)
   }
 
   const handlePerformMatch = async () => {
@@ -312,7 +320,7 @@ export const PublicEventView = () => {
           <div className="space-y-1.5">
             <h2 className="text-2xl font-extrabold text-slate-900">Find Your Photos</h2>
             <p className="text-xs text-slate-500 leading-relaxed max-w-sm mx-auto">
-              Take a quick selfie or upload a photo to instantly find every picture of you from this event.
+              Take a selfie with your camera or upload a photo to find every picture of you from this event.
             </p>
           </div>
 
@@ -359,17 +367,17 @@ export const PublicEventView = () => {
               </div>
             </div>
           ) : (
-            /* Dual Input Options: Take Selfie or Upload Photo */
+            /* Dual Input Options: Take Selfie (Live Camera) or Upload Photo */
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* Take Selfie via Device Camera */}
+                {/* Take Selfie via Live Camera Modal */}
                 <button
-                  onClick={() => cameraInputRef.current?.click()}
+                  onClick={() => setIsCameraOpen(true)}
                   className="flex flex-col items-center justify-center p-5 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl transition-all shadow-sm group cursor-pointer"
                 >
                   <Camera className="w-7 h-7 mb-2 text-slate-200 group-hover:scale-110 transition-transform" />
                   <span className="text-xs font-bold uppercase tracking-wider">Take Selfie</span>
-                  <span className="text-[10px] text-slate-300 mt-0.5">Use Phone / Laptop Camera</span>
+                  <span className="text-[10px] text-slate-300 mt-0.5">Open Live Webcam</span>
                 </button>
 
                 {/* Upload Photo File */}
@@ -379,7 +387,7 @@ export const PublicEventView = () => {
                 >
                   <Upload className="w-7 h-7 mb-2 text-slate-700 group-hover:scale-110 transition-transform" />
                   <span className="text-xs font-bold uppercase tracking-wider">Upload Photo</span>
-                  <span className="text-[10px] text-slate-500 mt-0.5">Select from Gallery / Disk</span>
+                  <span className="text-[10px] text-slate-500 mt-0.5">Select from Disk</span>
                 </button>
               </div>
 
@@ -395,16 +403,7 @@ export const PublicEventView = () => {
             </div>
           )}
 
-          {/* Hidden File Inputs */}
-          <input
-            ref={cameraInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            capture="user"
-            onChange={handleSelfieSelect}
-            className="hidden"
-          />
-
+          {/* Hidden File Input for File Upload */}
           <input
             ref={selfieFileInputRef}
             type="file"
@@ -420,6 +419,14 @@ export const PublicEventView = () => {
           </div>
         </div>
       )}
+
+      {/* Live Camera Modal */}
+      <CameraModal
+        isOpen={isCameraOpen}
+        onClose={() => setIsCameraOpen(false)}
+        onCapture={handleCameraCapture}
+        onSwitchToUpload={() => selfieFileInputRef.current?.click()}
+      />
 
       {/* Lightbox Modal */}
       {activeLightboxImage && (
