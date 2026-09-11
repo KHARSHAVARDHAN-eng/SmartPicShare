@@ -11,8 +11,10 @@ from tests.test_face_engine import MockFaceRecognitionService, create_synthetic_
 @pytest.mark.asyncio
 async def test_guest_match_unauthenticated(client: AsyncClient):
     fake_id = uuid.uuid4()
-    resp = await client.post(f"/api/v1/events/{fake_id}/match")
-    assert resp.status_code == 401
+    jpg_bytes = create_synthetic_test_image(num_faces=1)
+    file_payload = [("file", ("selfie.jpg", jpg_bytes, "image/jpeg"))]
+    resp = await client.post(f"/api/v1/events/{fake_id}/match", files=file_payload)
+    assert resp.status_code == 404
 
 
 @pytest.mark.asyncio

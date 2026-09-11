@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import get_current_user, get_face, get_storage
+from app.api.dependencies import get_optional_user, get_face, get_storage
 from app.config import settings
 from app.core.exceptions import AppException, NotFoundError
 from app.db.session import get_db
@@ -42,7 +42,7 @@ class GuestMatchResponse(BaseModel):
 async def match_guest_selfie(
     event_id: uuid.UUID,
     file: UploadFile = File(...),
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_optional_user),
     db: AsyncSession = Depends(get_db),
     storage: StorageService = Depends(get_storage),
     face_service: FaceRecognitionService = Depends(get_face),
