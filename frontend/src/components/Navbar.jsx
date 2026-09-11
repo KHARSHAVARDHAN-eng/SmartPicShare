@@ -1,10 +1,10 @@
 import React from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Camera, LogOut, LayoutDashboard, User as UserIcon } from 'lucide-react'
+import { Camera, LogOut, LayoutDashboard } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
 export const Navbar = () => {
-  const { user, signOut } = useAuth()
+  const { user, signOut, openAuthModal } = useAuth()
   const navigate = useNavigate()
 
   const handleSignOut = async () => {
@@ -76,12 +76,12 @@ export const Navbar = () => {
                 </div>
               </>
             ) : (
-              <Link
-                to="/"
-                className="text-xs font-semibold uppercase tracking-wider bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg transition-colors shadow-sm"
+              <button
+                onClick={() => openAuthModal('signin')}
+                className="text-xs font-semibold uppercase tracking-wider bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg transition-colors shadow-sm cursor-pointer"
               >
                 Sign In
-              </Link>
+              </button>
             )}
           </div>
         </div>

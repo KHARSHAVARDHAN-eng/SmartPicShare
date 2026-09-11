@@ -3,17 +3,13 @@ import { ArrowRight, Sparkles } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 
 export const HeroSection = () => {
-  const { user, signInWithGoogle } = useAuth()
+  const { user, openAuthModal } = useAuth()
 
-  const handleAction = async () => {
+  const handleAction = () => {
     if (user) {
       window.location.href = '/dashboard'
     } else {
-      try {
-        await signInWithGoogle()
-      } catch (err) {
-        console.error(err)
-      }
+      openAuthModal('signup')
     }
   }
 
@@ -44,9 +40,9 @@ export const HeroSection = () => {
             <div className="pt-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
               <button
                 onClick={handleAction}
-                className="inline-flex items-center justify-center space-x-3 bg-charcoal-950 hover:bg-charcoal-800 text-ivory-50 text-xs font-semibold uppercase tracking-widest px-8 py-4 border border-charcoal-950 transition-all shadow-md group"
+                className="inline-flex items-center justify-center space-x-3 bg-charcoal-950 hover:bg-charcoal-800 text-ivory-50 text-xs font-semibold uppercase tracking-widest px-8 py-4 border border-charcoal-950 transition-all shadow-md group cursor-pointer"
               >
-                <span>Find Your Photos</span>
+                <span>{user ? 'Go to Dashboard' : 'Find Your Photos / Get Started'}</span>
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </button>
 

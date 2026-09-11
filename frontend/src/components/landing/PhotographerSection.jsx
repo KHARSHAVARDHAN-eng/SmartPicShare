@@ -3,17 +3,13 @@ import { ArrowRight, Camera, Check } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 
 export const PhotographerSection = () => {
-  const { user, signInWithGoogle } = useAuth()
+  const { user, openAuthModal } = useAuth()
 
-  const handleCreateEventClick = async () => {
+  const handleCreateEventClick = () => {
     if (user) {
       window.location.href = '/dashboard'
     } else {
-      try {
-        await signInWithGoogle()
-      } catch (err) {
-        console.error(err)
-      }
+      openAuthModal('signup')
     }
   }
 
@@ -60,9 +56,9 @@ export const PhotographerSection = () => {
             <div className="pt-4">
               <button
                 onClick={handleCreateEventClick}
-                className="inline-flex items-center space-x-3 bg-charcoal-950 hover:bg-charcoal-800 text-ivory-50 text-xs font-semibold uppercase tracking-widest px-8 py-4 border border-charcoal-950 transition-all shadow-md group"
+                className="inline-flex items-center space-x-3 bg-charcoal-950 hover:bg-charcoal-800 text-ivory-50 text-xs font-semibold uppercase tracking-widest px-8 py-4 border border-charcoal-950 transition-all shadow-md group cursor-pointer"
               >
-                <span>Create an Event</span>
+                <span>{user ? 'Create an Event' : 'Sign Up to Create an Event'}</span>
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </button>
             </div>

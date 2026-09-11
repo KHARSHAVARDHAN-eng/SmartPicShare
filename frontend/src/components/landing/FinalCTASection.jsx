@@ -3,17 +3,13 @@ import { ArrowRight } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 
 export const FinalCTASection = () => {
-  const { user, signInWithGoogle } = useAuth()
+  const { user, openAuthModal } = useAuth()
 
-  const handleAction = async () => {
+  const handleAction = () => {
     if (user) {
       window.location.href = '/dashboard'
     } else {
-      try {
-        await signInWithGoogle()
-      } catch (err) {
-        console.error(err)
-      }
+      openAuthModal('signup')
     }
   }
 
@@ -37,9 +33,9 @@ export const FinalCTASection = () => {
         <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
           <button
             onClick={handleAction}
-            className="w-full sm:w-auto inline-flex items-center justify-center space-x-3 bg-ivory-50 hover:bg-ivory-200 text-charcoal-950 text-xs font-semibold uppercase tracking-widest px-10 py-4.5 border border-ivory-50 transition-all shadow-xl group"
+            className="w-full sm:w-auto inline-flex items-center justify-center space-x-3 bg-ivory-50 hover:bg-ivory-200 text-charcoal-950 text-xs font-semibold uppercase tracking-widest px-10 py-4.5 border border-ivory-50 transition-all shadow-xl group cursor-pointer"
           >
-            <span>Get Started</span>
+            <span>{user ? 'Go to Dashboard' : 'Get Started'}</span>
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </button>
 

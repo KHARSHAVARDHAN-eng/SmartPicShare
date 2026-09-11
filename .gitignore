@@ -30,3 +30,8 @@ test_smartsharephoto.db
 node_modules/
 dist/
 .output/
+
+# Local Storage Uploads & Test Media
+backend/uploads/
+uploads/
+pic copy.png

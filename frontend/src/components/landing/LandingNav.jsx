@@ -4,19 +4,23 @@ import { Menu, X, ArrowUpRight } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 
 export const LandingNav = () => {
-  const { user, signInWithGoogle } = useAuth()
+  const { user, openAuthModal } = useAuth()
   const navigate = useNavigate()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
-  const handleSignIn = async () => {
+  const handleSignIn = () => {
     if (user) {
       navigate('/dashboard')
     } else {
-      try {
-        await signInWithGoogle()
-      } catch (err) {
-        console.error('Sign in failed:', err)
-      }
+      openAuthModal('signin')
+    }
+  }
+
+  const handleSignUp = () => {
+    if (user) {
+      navigate('/dashboard')
+    } else {
+      openAuthModal('signup')
     }
   }
 
@@ -65,7 +69,7 @@ export const LandingNav = () => {
                 </button>
 
                 <button
-                  onClick={handleSignIn}
+                  onClick={handleSignUp}
                   className="bg-charcoal-950 hover:bg-charcoal-800 text-ivory-50 text-xs font-semibold uppercase tracking-widest px-5 py-3 rounded-none transition-all shadow-sm"
                 >
                   Get Started
@@ -114,7 +118,7 @@ export const LandingNav = () => {
             <button
               onClick={() => {
                 setMobileMenuOpen(false)
-                handleSignIn()
+                handleSignUp()
               }}
               className="w-full text-center bg-charcoal-950 text-ivory-50 text-xs font-semibold uppercase tracking-widest py-3.5"
             >
