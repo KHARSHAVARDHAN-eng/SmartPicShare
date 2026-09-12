@@ -301,7 +301,7 @@ export const DashboardPage = () => {
 
             <h3 className="text-xl font-bold text-slate-900 mb-1">Create Event Gallery</h3>
             <p className="text-xs text-slate-500 mb-6">
-              Enter event name. You can upload up to 150 photos per gallery.
+              Enter event name.
             </p>
 
             <form onSubmit={handleCreateEvent} className="space-y-4">
