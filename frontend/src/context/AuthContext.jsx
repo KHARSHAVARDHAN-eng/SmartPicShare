@@ -4,7 +4,7 @@ import { AuthModal } from '../components/auth/AuthModal'
 
 const AuthContext = createContext({})
 
-const envApiUrl = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000'
+const envApiUrl = (import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000').trim().replace(/\/+$/, '')
 export const API_BASE_URL = envApiUrl.replace('localhost:8000', '127.0.0.1:8000')
 
 export const AuthProvider = ({ children }) => {
@@ -124,9 +124,11 @@ export const AuthProvider = ({ children }) => {
       }
     } else {
       const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
-      candidateUrls.push(cleanEndpoint)
-      candidateUrls.push(`http://127.0.0.1:8000${cleanEndpoint}`)
-      candidateUrls.push(`http://localhost:8000${cleanEndpoint}`)
+      const targetUrl = `${API_BASE_URL}${cleanEndpoint}`
+      candidateUrls.push(targetUrl)
+      if (!targetUrl.includes('127.0.0.1:8000') && !targetUrl.includes('localhost:8000')) {
+        candidateUrls.push(`http://127.0.0.1:8000${cleanEndpoint}`)
+      }
     }
 
     let lastError = null
