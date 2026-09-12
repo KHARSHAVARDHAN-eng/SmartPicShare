@@ -231,3 +231,15 @@ async def test_vector_similarity_search_and_event_isolation(setup_test_db):
         )
         assert len(matches_b) == 1
         assert matches_b[0]["photo_id"] == photo_b.id
+
+
+def test_safe_vector_result_processing():
+    from app.db.base import SafeVector
+    sv = SafeVector(512)
+    vec_list = [0.1] * 512
+    assert sv.process_result_value(vec_list, None) == vec_list
+    vec_str = "[" + ",".join(str(x) for x in vec_list) + "]"
+    res_str = sv.process_result_value(vec_str, None)
+    assert len(res_str) == 512
+    assert res_str[0] == 0.1
+    assert sv.process_result_value(None, None) is None
