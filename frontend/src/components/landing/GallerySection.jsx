@@ -55,10 +55,6 @@ export const GallerySection = () => {
                   alt={photo.caption}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 filter contrast-[1.02]"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-charcoal-950/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                <span className="absolute bottom-3 left-3 text-ivory-50 text-[10px] font-mono uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
-                  {photo.caption}
-                </span>
               </div>
             </div>
           ))}

@@ -61,14 +61,10 @@ export const UploadSection = () => {
             </h2>
 
             <p className="text-base text-charcoal-600 font-light leading-relaxed">
-              Photographers drag and drop up to 150 high-resolution event photographs. SmartSharePhoto processes facial features automatically in the background, making every photo instantly searchable without manual tagging or folder sorting.
+              Photographers drag and drop high-resolution event photographs. SmartSharePhoto processes facial features automatically in the background, making every photo instantly searchable without manual tagging or folder sorting.
             </p>
 
-            <div className="pt-4 grid grid-cols-2 gap-6 border-t border-warm-200 text-xs uppercase tracking-widest font-mono">
-              <div>
-                <span className="block text-2xl font-serif font-bold text-charcoal-950">150</span>
-                <span className="text-charcoal-600 text-[10px]">Photos per Event</span>
-              </div>
+            <div className="pt-4 border-t border-warm-200 text-xs uppercase tracking-widest font-mono">
               <div>
                 <span className="block text-2xl font-serif font-bold text-charcoal-950">Automated</span>
                 <span className="text-charcoal-600 text-[10px]">Face Indexing</span>

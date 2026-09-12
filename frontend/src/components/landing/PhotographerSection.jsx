@@ -16,7 +16,6 @@ export const PhotographerSection = () => {
   }
 
   const features = [
-    'Up to 150 photos per event gallery',
     'Automated ONNX face detection & 512-dim embedding extraction',
     'Printable QR code generator for live event venues',
     'Custom event URL slug creation',

@@ -70,7 +70,6 @@ export const HeroSection = () => {
                 <div className="absolute inset-0 bg-gradient-to-t from-charcoal-950/40 via-transparent to-transparent"></div>
                 <div className="absolute bottom-4 left-4 right-4 text-ivory-50 text-[11px] font-mono tracking-wider flex justify-between items-center uppercase">
                   <span>Gallery Snapshot</span>
-                  <span>150 Photos Indexed</span>
                 </div>
               </div>
             </div>

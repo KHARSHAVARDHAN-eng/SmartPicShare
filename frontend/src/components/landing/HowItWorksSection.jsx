@@ -7,7 +7,7 @@ export const HowItWorksSection = () => {
     {
       number: '01',
       title: 'UPLOAD',
-      description: "Photographers upload the event photos once. SmartSharePhoto automatically indexes faces across up to 150 high-resolution images.",
+      description: "Photographers upload the event photos once. SmartSharePhoto automatically indexes faces across high-resolution images.",
       image: image3,
     },
     {

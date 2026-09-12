@@ -106,16 +106,7 @@ export const EventDetailPage = () => {
       validFiles.push(f)
     }
 
-    // 2. Client-side validation: Max 150 photos per event
-    const currentCount = photos.length
-    if (currentCount + validFiles.length > 150) {
-      setUploadError(
-        `Cannot upload ${validFiles.length} photos. Current count: ${currentCount}/150. Maximum limit is 150 photos per event.`
-      )
-      return
-    }
-
-    // 3. Perform batch upload to backend
+    // 2. Perform batch upload to backend
     try {
       setUploading(true)
       setUploadProgress({
@@ -297,7 +288,7 @@ export const EventDetailPage = () => {
         {/* Upload Trigger Button */}
         <button
           onClick={() => fileInputRef.current?.click()}
-          disabled={photos.length >= 150 || uploading}
+          disabled={uploading}
           className="flex items-center justify-center space-x-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold uppercase tracking-wider px-6 py-3 rounded-xl shadow-sm transition-all disabled:opacity-50"
         >
           <Upload className="w-4 h-4" />
@@ -312,29 +303,6 @@ export const EventDetailPage = () => {
           onChange={handleFileSelect}
           className="hidden"
         />
-      </div>
-
-      {/* Status Metrics Bar */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-sm">
-          <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider block mb-1">Total Photos</span>
-          <span className="text-2xl font-bold text-slate-900 font-mono">{photos.length} / 150</span>
-        </div>
-
-        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-sm">
-          <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider block mb-1">Indexed Faces</span>
-          <span className="text-2xl font-bold text-emerald-600 font-mono">{event.processed_count}</span>
-        </div>
-
-        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-sm">
-          <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider block mb-1">Pending</span>
-          <span className="text-2xl font-bold text-amber-600 font-mono">{event.pending_count}</span>
-        </div>
-
-        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-sm">
-          <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider block mb-1">Failed</span>
-          <span className="text-2xl font-bold text-red-600 font-mono">{event.failed_count}</span>
-        </div>
       </div>
 
       {/* Upload Error Banner */}
@@ -374,7 +342,7 @@ export const EventDetailPage = () => {
               <Upload className="w-6 h-6" />
             </div>
             <p className="text-sm font-semibold text-slate-900">Drag & drop or click to upload photos</p>
-            <p className="text-xs text-slate-500 mt-1">Supports JPEG, PNG, WEBP up to 10MB (Max 150 photos)</p>
+            <p className="text-xs text-slate-500 mt-1">Supports JPEG, PNG, WEBP up to 10MB</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
