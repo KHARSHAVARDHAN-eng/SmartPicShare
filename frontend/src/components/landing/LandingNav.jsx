@@ -12,7 +12,7 @@ export const LandingNav = () => {
     if (user) {
       navigate('/dashboard')
     } else {
-      openAuthModal('signin')
+      openAuthModal()
     }
   }
 
@@ -20,7 +20,7 @@ export const LandingNav = () => {
     if (user) {
       navigate('/dashboard')
     } else {
-      openAuthModal('signup')
+      openAuthModal()
     }
   }
 

@@ -2,6 +2,9 @@ import React from 'react'
 import { ArrowRight, Sparkles } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 
+import image1 from '../../assets/image1.jpeg'
+import image2 from '../../assets/image2.jpeg'
+
 export const HeroSection = () => {
   const { user, openAuthModal } = useAuth()
 
@@ -9,7 +12,7 @@ export const HeroSection = () => {
     if (user) {
       window.location.href = '/dashboard'
     } else {
-      openAuthModal('signup')
+      openAuthModal()
     }
   }
 
@@ -60,7 +63,7 @@ export const HeroSection = () => {
             <div className="relative z-10 border border-warm-300 bg-ivory-100 p-3 shadow-xl">
               <div className="aspect-[4/5] overflow-hidden bg-warm-100 relative">
                 <img
-                  src="https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=1000&q=85"
+                  src={image1}
                   alt="High fashion wedding event photography"
                   className="w-full h-full object-cover filter contrast-[1.03] grayscale-[10%] hover:scale-105 transition-transform duration-700"
                 />
@@ -76,7 +79,7 @@ export const HeroSection = () => {
             <div className="hidden sm:block absolute -bottom-8 -left-10 z-20 w-48 border border-warm-300 bg-ivory-50 p-2 shadow-2xl">
               <div className="aspect-square bg-warm-200 overflow-hidden">
                 <img
-                  src="https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=600&q=80"
+                  src={image2}
                   alt="Event guest detail photo"
                   className="w-full h-full object-cover"
                 />

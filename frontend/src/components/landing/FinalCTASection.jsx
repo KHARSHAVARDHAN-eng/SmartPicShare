@@ -9,7 +9,7 @@ export const FinalCTASection = () => {
     if (user) {
       window.location.href = '/dashboard'
     } else {
-      openAuthModal('signup')
+      openAuthModal()
     }
   }
 

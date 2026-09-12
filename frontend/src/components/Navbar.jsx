@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Camera, LogOut, LayoutDashboard } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext'
 export const Navbar = () => {
   const { user, signOut, openAuthModal } = useAuth()
   const navigate = useNavigate()
+  const [imageError, setImageError] = useState(false)
 
   const handleSignOut = async () => {
     try {
@@ -16,7 +17,23 @@ export const Navbar = () => {
     }
   }
 
-  const userName = user?.user_metadata?.full_name || user?.email || 'User'
+  const avatarUrl =
+    user?.user_metadata?.avatar_url ||
+    user?.user_metadata?.picture ||
+    user?.avatar_url
+
+  const userName =
+    user?.user_metadata?.full_name ||
+    user?.user_metadata?.name ||
+    user?.email ||
+    'User'
+
+  const userInitial = userName.charAt(0).toUpperCase()
+
+  // Reset image error state whenever user session changes
+  useEffect(() => {
+    setImageError(false)
+  }, [user])
 
   return (
     <nav className="glass-nav">
@@ -49,15 +66,16 @@ export const Navbar = () => {
 
                 <div className="flex items-center space-x-3 pl-3 border-l border-slate-200">
                   <div className="flex items-center space-x-2">
-                    {user.user_metadata?.avatar_url ? (
+                    {avatarUrl && !imageError ? (
                       <img
-                        src={user.user_metadata.avatar_url}
+                        src={avatarUrl}
                         alt={userName}
-                        className="w-8 h-8 rounded-full border border-slate-200 object-cover shadow-sm"
+                        onError={() => setImageError(true)}
+                        className="w-8 h-8 rounded-full border border-slate-200 object-cover shadow-sm shrink-0"
                       />
                     ) : (
-                      <div className="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-bold shadow-sm">
-                        {userName.charAt(0).toUpperCase()}
+                      <div className="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-bold shadow-sm shrink-0 uppercase">
+                        {userInitial}
                       </div>
                     )}
                     <span className="hidden md:inline-block text-xs font-medium text-slate-800 max-w-[140px] truncate">
@@ -68,7 +86,7 @@ export const Navbar = () => {
                   <button
                     onClick={handleSignOut}
                     title="Sign Out"
-                    className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
                     aria-label="Sign Out"
                   >
                     <LogOut className="w-4.5 h-4.5" />
@@ -77,7 +95,7 @@ export const Navbar = () => {
               </>
             ) : (
               <button
-                onClick={() => openAuthModal('signin')}
+                onClick={() => openAuthModal()}
                 className="text-xs font-semibold uppercase tracking-wider bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg transition-colors shadow-sm cursor-pointer"
               >
                 Sign In
@@ -89,3 +107,4 @@ export const Navbar = () => {
     </nav>
   )
 }
+

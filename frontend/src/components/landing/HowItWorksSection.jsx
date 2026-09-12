@@ -1,4 +1,6 @@
 import React from 'react'
+import image3 from '../../assets/image3.jpeg'
+import image4 from '../../assets/image4.jpeg'
 
 export const HowItWorksSection = () => {
   const steps = [
@@ -6,13 +8,13 @@ export const HowItWorksSection = () => {
       number: '01',
       title: 'UPLOAD',
       description: "Photographers upload the event photos once. SmartSharePhoto automatically indexes faces across up to 150 high-resolution images.",
-      image: 'https://images.unsplash.com/photo-1542038784456-1ea8e935640e?auto=format&fit=crop&w=800&q=80',
+      image: image3,
     },
     {
       number: '02',
       title: 'SHARE',
       description: 'Display a single QR code or distribute one custom event link. Every attendee receives instant access to the event landing page.',
-      image: 'https://images.unsplash.com/photo-1522673607200-164d1b6ce486?auto=format&fit=crop&w=800&q=80',
+      image: image4,
     },
     {
       number: '03',

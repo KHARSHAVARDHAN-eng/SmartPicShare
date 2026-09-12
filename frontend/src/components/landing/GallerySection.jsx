@@ -1,21 +1,25 @@
 import React from 'react'
+import image9 from '../../assets/image9.jpeg'
+import image10 from '../../assets/image10.jpeg'
+import image11 from '../../assets/image11.jpeg'
+import image12 from '../../assets/image12.jpeg'
 
 export const GallerySection = () => {
   const galleryPhotos = [
     {
-      url: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=85',
+      url: image9,
       caption: 'Evening Reception Gala',
     },
     {
-      url: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=800&q=85',
+      url: image10,
       caption: 'Main Stage Keynote',
     },
     {
-      url: 'https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?auto=format&fit=crop&w=800&q=85',
+      url: image11,
       caption: 'Outdoor Cocktail Hour',
     },
     {
-      url: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=800&q=85',
+      url: image12,
       caption: 'Celebration Afterparty',
     },
   ]

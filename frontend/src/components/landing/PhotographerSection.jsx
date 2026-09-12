@@ -2,6 +2,8 @@ import React from 'react'
 import { ArrowRight, Camera, Check } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 
+import image13 from '../../assets/image13.png'
+
 export const PhotographerSection = () => {
   const { user, openAuthModal } = useAuth()
 
@@ -9,7 +11,7 @@ export const PhotographerSection = () => {
     if (user) {
       window.location.href = '/dashboard'
     } else {
-      openAuthModal('signup')
+      openAuthModal()
     }
   }
 
@@ -69,7 +71,7 @@ export const PhotographerSection = () => {
             <div className="border border-warm-300 bg-ivory-100 p-3 shadow-xl">
               <div className="aspect-[4/5] bg-warm-200 overflow-hidden relative">
                 <img
-                  src="https://images.unsplash.com/photo-1542038784456-1ea8e935640e?auto=format&fit=crop&w=1000&q=85"
+                  src={image13}
                   alt="Professional Photographer with camera"
                   className="w-full h-full object-cover filter contrast-[1.03]"
                 />

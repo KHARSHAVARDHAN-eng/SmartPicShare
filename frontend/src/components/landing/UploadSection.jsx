@@ -1,4 +1,8 @@
 import React from 'react'
+import image5 from '../../assets/image5.jpeg'
+import image6 from '../../assets/image6.png'
+import image7 from '../../assets/image7.png'
+import image8 from '../../assets/image8.jpeg'
 
 export const UploadSection = () => {
   return (
@@ -12,14 +16,14 @@ export const UploadSection = () => {
               <div className="space-y-4">
                 <div className="aspect-[3/4] border border-warm-300 overflow-hidden">
                   <img
-                    src="https://images.unsplash.com/photo-1469371670807-013ccf25f16a?auto=format&fit=crop&w=600&q=80"
+                    src={image5}
                     alt="Event photography portrait 1"
                     className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
                   />
                 </div>
                 <div className="aspect-square border border-warm-300 overflow-hidden">
                   <img
-                    src="https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=600&q=80"
+                    src={image7}
                     alt="Event photography detail"
                     className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
                   />
@@ -29,14 +33,14 @@ export const UploadSection = () => {
               <div className="space-y-4 pt-8">
                 <div className="aspect-square border border-warm-300 overflow-hidden">
                   <img
-                    src="https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=600&q=80"
+                    src={image6}
                     alt="Event photography crowd"
                     className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
                   />
                 </div>
                 <div className="aspect-[3/4] border border-warm-300 overflow-hidden">
                   <img
-                    src="https://images.unsplash.com/photo-1505236858219-8359eb29e329?auto=format&fit=crop&w=600&q=80"
+                    src={image8}
                     alt="Event photography portrait 2"
                     className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
                   />

@@ -1,7 +1,7 @@
 import secrets
 import uuid
 from typing import List
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy import case, delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -202,8 +202,6 @@ async def get_event(
     return EventRead(**event_dict)
 
 
-
-from fastapi import APIRouter, Depends, Response, status
 
 @router.delete("/{event_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_event(

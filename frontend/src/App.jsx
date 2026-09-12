@@ -8,7 +8,13 @@ import { EventDetailPage } from './pages/EventDetailPage'
 import { PublicEventView } from './pages/PublicEventView'
 
 const ProtectedRoute = ({ children }) => {
-  const { user, loading } = useAuth()
+  const { user, loading, openAuthModal } = useAuth()
+
+  React.useEffect(() => {
+    if (!loading && !user) {
+      openAuthModal()
+    }
+  }, [loading, user, openAuthModal])
 
   if (loading) {
     return (
