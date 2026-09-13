@@ -31,6 +31,15 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Failed to execute Alembic database migrations: {e}", exc_info=True)
 
+    try:
+        import asyncio
+        from app.services.face import get_face_service
+        face_engine = get_face_service()
+        await asyncio.to_thread(face_engine._get_insightface_app)
+        logger.info("InsightFace face engine pre-warmed successfully during startup.")
+    except Exception as e:
+        logger.warning(f"InsightFace face engine pre-warming skipped: {e}")
+
     yield
     logger.info("Shutting down application...")
 
