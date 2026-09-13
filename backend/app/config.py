@@ -69,6 +69,32 @@ class Settings(BaseSettings):
             return v
         raise ValueError(v)
 
+    @field_validator("DATABASE_URL", "SYNC_DATABASE_URL", mode="before")
+    @classmethod
+    def sanitize_database_url(cls, v: str) -> str:
+        if not v or not isinstance(v, str):
+            return v
+        try:
+            from sqlalchemy.engine.url import make_url
+            make_url(v)
+            return v
+        except Exception:
+            try:
+                from urllib.parse import quote_plus
+                from sqlalchemy.engine.url import make_url
+                scheme_and_user_pass, host_db = v.rsplit("@", 1)
+                parts = scheme_and_user_pass.split(":", 2)
+                if len(parts) == 3:
+                    scheme_user = f"{parts[0]}:{parts[1]}"
+                    raw_pass = parts[2]
+                    enc_pass = quote_plus(raw_pass)
+                    sanitized = f"{scheme_user}:{enc_pass}@{host_db}"
+                    make_url(sanitized)
+                    return sanitized
+            except Exception:
+                pass
+            return v
+
     model_config = SettingsConfigDict(
         env_file=(".env", "backend/.env"),
         env_file_encoding="utf-8",
