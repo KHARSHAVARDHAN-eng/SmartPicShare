@@ -43,8 +43,9 @@ class InsightFaceEngine(FaceRecognitionService):
             logger.warning("InsightFace library is not available in environment.")
             return None
 
-        if os.getenv("DISABLE_INSIGHTFACE_ONNX", "").lower() in ("true", "1", "yes"):
-            logger.info("InsightFace ONNX disabled via DISABLE_INSIGHTFACE_ONNX env var.")
+        disable_env = os.getenv("DISABLE_INSIGHTFACE_ONNX", "").lower()
+        if disable_env in ("true", "1", "yes") or (not disable_env and os.getenv("ENVIRONMENT") == "production"):
+            logger.info("InsightFace ONNX disabled for production memory/CPU optimization; using lightweight 512-dim face feature engine.")
             return None
 
         if cls._app is None and not cls._initialized:

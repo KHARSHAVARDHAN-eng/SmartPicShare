@@ -12,8 +12,8 @@ _DEFAULT_STORAGE_KEY_B64 = "c2Jfc2VjcmV0X19BZC1LM0FaNU1mSnVBV3VtQWVYSkFfeHRtWm5q
 class SupabaseStorageService(StorageService):
     """
     Supabase Storage Adapter implementing StorageService.
-    Stores and manages private photo objects using Supabase Storage REST API.
     """
+    _bucket_verified: bool = False
 
     def __init__(self):
         self.supabase_url = (settings.SUPABASE_URL or "https://oqlxlstsycgvzitjtotc.supabase.co").rstrip("/")
@@ -39,6 +39,8 @@ class SupabaseStorageService(StorageService):
         """
         Ensures the target storage bucket exists.
         """
+        if SupabaseStorageService._bucket_verified:
+            return
         try:
             url = f"{self.supabase_url}/storage/v1/bucket/{self.bucket_name}"
             res = requests.get(url, headers=self._get_headers())
@@ -50,6 +52,7 @@ class SupabaseStorageService(StorageService):
                     "public": False,
                 }
                 requests.post(create_url, headers=self._get_headers("application/json"), json=payload)
+            SupabaseStorageService._bucket_verified = True
         except Exception as e:
             logger.warning(f"Could not automatically verify bucket {self.bucket_name}: {e}")
 
