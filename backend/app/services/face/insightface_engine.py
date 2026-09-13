@@ -43,6 +43,30 @@ class InsightFaceEngine(FaceRecognitionService):
     _initialized: bool = False
 
     @classmethod
+    def _ensure_local_models(cls):
+        """
+        Copies pre-bundled ONNX model files (det_500m.onnx, w600k_mbf.onnx) from app assets
+        to ~/.insightface/models/buffalo_s/ to guarantee 100% offline, zero-network model loading.
+        """
+        try:
+            home = os.path.expanduser("~")
+            target_dir = os.path.join(home, ".insightface", "models", "buffalo_s")
+            os.makedirs(target_dir, exist_ok=True)
+
+            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            assets_dir = os.path.join(base_dir, "assets", "models", "buffalo_s")
+
+            for filename in ("det_500m.onnx", "w600k_mbf.onnx"):
+                src = os.path.join(assets_dir, filename)
+                dst = os.path.join(target_dir, filename)
+                if os.path.exists(src) and not os.path.exists(dst):
+                    import shutil
+                    shutil.copy2(src, dst)
+                    logger.info(f"Copied bundled model {filename} to {dst}")
+        except Exception as e:
+            logger.warning(f"Could not copy bundled InsightFace models: {e}")
+
+    @classmethod
     def _get_insightface_app(cls) -> Optional[Any]:
         """
         Singleton lifecycle approach: Loads InsightFace models ONCE per backend process.
@@ -55,6 +79,7 @@ class InsightFaceEngine(FaceRecognitionService):
 
         if cls._app is None and not cls._initialized:
             try:
+                cls._ensure_local_models()
                 logger.info("Initializing InsightFace 'buffalo_s' CPU model pack (detection + recognition)...")
                 app = FaceAnalysis(
                     name="buffalo_s",
