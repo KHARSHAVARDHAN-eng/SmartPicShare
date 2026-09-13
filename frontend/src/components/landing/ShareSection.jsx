@@ -3,7 +3,7 @@ import { QrCode, Link as LinkIcon, Smartphone } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 
 export const ShareSection = () => {
-  const sampleUrl = 'https://smartsharephoto.app/event/gala-2026'
+  const sampleUrl = 'https://smartpicshare-frontend.onrender.com/event/gala-2026'
 
   return (
     <section className="py-24 md:py-32 bg-ivory-100/70 border-b border-warm-200">
