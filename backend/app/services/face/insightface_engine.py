@@ -74,8 +74,13 @@ class InsightFaceEngine(FaceRecognitionService):
 
             # 2. Convert PIL RGB Image to numpy BGR array
             rgb_arr = np.array(pil_img)
-            bgr_arr = cv2.cvtColor(rgb_arr, cv2.COLOR_RGB2BGR)
+            if INSIGHTFACE_AVAILABLE and 'cv2' in globals() and cv2 is not None:
+                bgr_arr = cv2.cvtColor(rgb_arr, cv2.COLOR_RGB2BGR)
+            else:
+                bgr_arr = rgb_arr[:, :, ::-1]
             return bgr_arr
+        except AppException:
+            raise
         except Exception as e:
             logger.error(f"Image decoding failed for payload of size {len(image_bytes)}: {str(e)}")
             raise AppException(f"Invalid or corrupted image format: {str(e)}", status_code=400)

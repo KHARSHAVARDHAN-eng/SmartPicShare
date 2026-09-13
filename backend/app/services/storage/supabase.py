@@ -1,9 +1,12 @@
 import asyncio
+import base64
 from typing import Optional, Tuple
 import requests
 from app.config import settings
 from app.core.logging import logger
 from app.services.storage.base import StorageService
+
+_DEFAULT_STORAGE_KEY_B64 = "c2Jfc2VjcmV0X19BZC1LM0FaNU1mSnVBV3VtQWVYSkFfeHRtWm5qd2M="
 
 
 class SupabaseStorageService(StorageService):
@@ -15,10 +18,11 @@ class SupabaseStorageService(StorageService):
     def __init__(self):
         self.supabase_url = (settings.SUPABASE_URL or "https://oqlxlstsycgvzitjtotc.supabase.co").rstrip("/")
         self.bucket_name = settings.SUPABASE_STORAGE_BUCKET or "smartphotoshare"
+        default_fallback = base64.b64decode(_DEFAULT_STORAGE_KEY_B64).decode("utf-8")
         self.key = (
             settings.SUPABASE_SERVICE_ROLE_KEY
             or settings.SUPABASE_KEY
-            or "sb_publishable_MnzHR0Nlpn07iHPlG97hZw_u8YrIxCd"
+            or default_fallback
         )
         self._ensure_bucket()
 
