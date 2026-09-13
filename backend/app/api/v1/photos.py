@@ -173,6 +173,7 @@ async def upload_photos(
         )
         db.add(photo)
         await db.commit()
+        await db.refresh(photo)
 
         # Execute face embedding extraction
         if settings.ENVIRONMENT == "testing":
