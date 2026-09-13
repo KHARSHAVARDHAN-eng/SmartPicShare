@@ -13,7 +13,7 @@ os.environ["VECLIB_MAXIMUM_THREADS"] = "1"
 os.environ["NUMEXPR_NUM_THREADS"] = "1"
 
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageOps
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -100,17 +100,14 @@ class InsightFaceEngine(FaceRecognitionService):
     def decode_image_bytes(self, image_bytes: bytes) -> np.ndarray:
         """
         Decodes raw binary image payload into an OpenCV BGR numpy array.
+        Applies ImageOps.exif_transpose to respect EXIF orientation from smartphone cameras.
         """
         try:
-            # 1. Verify PIL decodability
             pil_img = Image.open(io.BytesIO(image_bytes))
-            pil_img.verify()
-
-            # Re-open after verify() (Pillow requirement)
-            pil_img = Image.open(io.BytesIO(image_bytes))
+            pil_img = ImageOps.exif_transpose(pil_img)
             pil_img = pil_img.convert("RGB")
 
-            # 2. Convert PIL RGB Image to numpy BGR array
+            # Convert PIL RGB Image to numpy BGR array
             rgb_arr = np.array(pil_img)
             if INSIGHTFACE_AVAILABLE and 'cv2' in globals() and cv2 is not None:
                 bgr_arr = cv2.cvtColor(rgb_arr, cv2.COLOR_RGB2BGR)
@@ -140,7 +137,7 @@ class InsightFaceEngine(FaceRecognitionService):
         return bgr_arr, 1.0
 
     async def detect_faces(
-        self, image_bytes: bytes, min_confidence: float = 0.50
+        self, image_bytes: bytes, min_confidence: float = 0.40
     ) -> List[Dict[str, Any]]:
         raw_bgr = self.decode_image_bytes(image_bytes)
         bgr_arr, scale = self._downsample_bgr(raw_bgr)
@@ -171,7 +168,7 @@ class InsightFaceEngine(FaceRecognitionService):
         return results
 
     async def generate_embeddings(
-        self, image_bytes: bytes, min_confidence: float = 0.50
+        self, image_bytes: bytes, min_confidence: float = 0.40
     ) -> List[List[float]]:
         raw_bgr = self.decode_image_bytes(image_bytes)
         bgr_arr, _ = self._downsample_bgr(raw_bgr)
@@ -212,7 +209,7 @@ class InsightFaceEngine(FaceRecognitionService):
         processed_faces = []
         for face in faces:
             score = float(getattr(face, "det_score", 1.0))
-            if score < 0.50:
+            if score < 0.40:
                 continue
 
             bbox = face.bbox.astype(int).tolist()
@@ -240,7 +237,7 @@ class InsightFaceEngine(FaceRecognitionService):
         return processed_faces
 
     async def extract_selfie_embedding(
-        self, image_bytes: bytes, min_confidence: float = 0.50
+        self, image_bytes: bytes, min_confidence: float = 0.40
     ) -> Optional[List[float]]:
         embeddings = await self.generate_embeddings(image_bytes, min_confidence=min_confidence)
         if not embeddings:
@@ -256,43 +253,12 @@ class InsightFaceEngine(FaceRecognitionService):
         limit: int = 50,
     ) -> List[Dict[str, Any]]:
         """
-        Executes vector similarity search with strict event isolation.
-        Tries native pgvector query on PostgreSQL if available, and seamlessly
-        falls back to Python vector cosine similarity calculation if pgvector extension is missing.
+        Executes vector similarity search with strict event isolation using NumPy vectorization.
+        Computes exact cosine similarity between query selfie vector and all event photo face embeddings.
         """
         if len(query_embedding) != 512:
             raise AppException(f"Invalid query embedding dimension: expected 512, got {len(query_embedding)}", status_code=400)
 
-        # 1. Try native pgvector query on PostgreSQL if extension is active
-        bind = db.get_bind()
-        if bind.dialect.name == "postgresql":
-            try:
-                query_str = """
-                    SELECT photo_id, MAX(1 - (embedding <=> CAST(:query_vec AS vector))) AS similarity
-                    FROM face_embeddings
-                    WHERE event_id = :event_id
-                      AND (1 - (embedding <=> CAST(:query_vec AS vector))) >= :threshold
-                    GROUP BY photo_id
-                    ORDER BY similarity DESC
-                    LIMIT :limit
-                """
-                vec_str = f"[{','.join(str(x) for x in query_embedding)}]"
-                result = await db.execute(
-                    text(query_str),
-                    {
-                        "event_id": str(event_id),
-                        "query_vec": vec_str,
-                        "threshold": threshold,
-                        "limit": limit,
-                    },
-                )
-                rows = result.all()
-                return [{"photo_id": uuid.UUID(str(row[0])), "similarity": float(row[1])} for row in rows]
-            except Exception as pg_err:
-                await db.rollback()
-                logger.warning(f"Native pgvector query failed ({pg_err}); using Python cosine similarity fallback.")
-
-        # 2. Resilient Python Vector Cosine Similarity Fallback
         stmt = select(FaceEmbedding).where(FaceEmbedding.event_id == event_id)
         res = await db.execute(stmt)
         embeddings_records = res.scalars().all()
@@ -308,7 +274,7 @@ class InsightFaceEngine(FaceRecognitionService):
             return []
 
         for rec in embeddings_records:
-            if not rec.embedding:
+            if not rec.embedding or len(rec.embedding) != 512:
                 continue
             emb_arr = np.array(rec.embedding, dtype=np.float32)
             emb_norm = np.linalg.norm(emb_arr)

@@ -82,24 +82,16 @@ async def match_guest_selfie(
     except Exception as e:
         raise AppException(f"Invalid or corrupted selfie image: {str(e)}", status_code=400)
 
-    # 4. Detect faces and enforce V1 selfie rules
-    faces = await face_service.detect_faces(selfie_bytes, min_confidence=0.50)
-    if len(faces) == 0:
+    # 4. Extract 512-dimensional guest face embedding & enforce single-face selfie rules
+    embeddings = await face_service.generate_embeddings(selfie_bytes, min_confidence=0.40)
+    if len(embeddings) == 0:
         raise AppException(
             "We couldn't detect a face in your selfie. Please try another photo with good lighting.",
             status_code=status.HTTP_400_BAD_REQUEST,
         )
-    if len(faces) > 1:
+    if len(embeddings) > 1:
         raise AppException(
             "Multiple faces detected. Please upload a selfie with only your face visible.",
-            status_code=status.HTTP_400_BAD_REQUEST,
-        )
-
-    # 5. Extract 512-dimensional guest face embedding
-    embeddings = await face_service.generate_embeddings(selfie_bytes, min_confidence=0.50)
-    if not embeddings or len(embeddings[0]) != 512:
-        raise AppException(
-            "We couldn't generate a clear facial embedding. Please try another selfie.",
             status_code=status.HTTP_400_BAD_REQUEST,
         )
 
