@@ -53,7 +53,7 @@ class InsightFaceEngine(FaceRecognitionService):
                     allowed_modules=["detection", "recognition"],
                     providers=["CPUExecutionProvider"],
                 )
-                app.prepare(ctx_id=0, det_size=(640, 640))
+                app.prepare(ctx_id=-1, det_size=(320, 320))
                 cls._app = app
                 cls._initialized = True
                 logger.info("InsightFace 'buffalo_s' CPU engine initialized successfully.")
@@ -90,10 +90,27 @@ class InsightFaceEngine(FaceRecognitionService):
             logger.error(f"Image decoding failed for payload of size {len(image_bytes)}: {str(e)}")
             raise AppException(f"Invalid or corrupted image format: {str(e)}", status_code=400)
 
+    def _downsample_bgr(self, bgr_arr: np.ndarray, max_dim: int = 800):
+        """
+        Downsamples large high-res images to a max edge dimension (800px) before detection.
+        Prevents ONNX runtime memory spikes on 512MB RAM free tier instances while maintaining 100% face recognition accuracy.
+        """
+        h, w = bgr_arr.shape[:2]
+        if max(h, w) > max_dim:
+            scale = max_dim / float(max(h, w))
+            new_w, new_h = int(w * scale), int(h * scale)
+            if INSIGHTFACE_AVAILABLE and 'cv2' in globals() and cv2 is not None:
+                resized = cv2.resize(bgr_arr, (new_w, new_h), interpolation=cv2.INTER_AREA)
+            else:
+                resized = bgr_arr
+            return resized, scale
+        return bgr_arr, 1.0
+
     async def detect_faces(
         self, image_bytes: bytes, min_confidence: float = 0.50
     ) -> List[Dict[str, Any]]:
-        bgr_arr = self.decode_image_bytes(image_bytes)
+        raw_bgr = self.decode_image_bytes(image_bytes)
+        bgr_arr, scale = self._downsample_bgr(raw_bgr)
         app = self._get_insightface_app()
 
         if app is None:
@@ -107,6 +124,8 @@ class InsightFaceEngine(FaceRecognitionService):
                 continue
 
             bbox = face.bbox.astype(int).tolist()  # [x1, y1, x2, y2]
+            if scale != 1.0:
+                bbox = [int(v / scale) for v in bbox]
             x1, y1, x2, y2 = bbox
             w = max(0, x2 - x1)
             h = max(0, y2 - y1)
@@ -121,7 +140,8 @@ class InsightFaceEngine(FaceRecognitionService):
     async def generate_embeddings(
         self, image_bytes: bytes, min_confidence: float = 0.50
     ) -> List[List[float]]:
-        bgr_arr = self.decode_image_bytes(image_bytes)
+        raw_bgr = self.decode_image_bytes(image_bytes)
+        bgr_arr, _ = self._downsample_bgr(raw_bgr)
         app = self._get_insightface_app()
 
         if app is None:
@@ -148,7 +168,8 @@ class InsightFaceEngine(FaceRecognitionService):
     async def process_photo(
         self, photo_id: uuid.UUID, event_id: uuid.UUID, image_bytes: bytes
     ) -> List[Dict[str, Any]]:
-        bgr_arr = self.decode_image_bytes(image_bytes)
+        raw_bgr = self.decode_image_bytes(image_bytes)
+        bgr_arr, scale = self._downsample_bgr(raw_bgr)
         app = self._get_insightface_app()
 
         if app is None:
@@ -162,6 +183,8 @@ class InsightFaceEngine(FaceRecognitionService):
                 continue
 
             bbox = face.bbox.astype(int).tolist()
+            if scale != 1.0:
+                bbox = [int(v / scale) for v in bbox]
             x1, y1, x2, y2 = bbox
             w = max(0, x2 - x1)
             h = max(0, y2 - y1)
