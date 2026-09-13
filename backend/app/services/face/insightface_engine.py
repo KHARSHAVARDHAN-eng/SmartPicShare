@@ -1,7 +1,17 @@
+import asyncio
 import io
 import math
+import os
 import uuid
 from typing import Any, Dict, List, Optional
+
+# Enforce single-threaded CPU execution to cap ONNX Runtime thread pools and memory footprint on 512MB RAM containers
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["VECLIB_MAXIMUM_THREADS"] = "1"
+os.environ["NUMEXPR_NUM_THREADS"] = "1"
+
 import numpy as np
 from PIL import Image
 from sqlalchemy import select, text
@@ -21,8 +31,6 @@ try:
 except ImportError:
     INSIGHTFACE_AVAILABLE = False
 
-
-import os
 
 class InsightFaceEngine(FaceRecognitionService):
     """
@@ -116,7 +124,7 @@ class InsightFaceEngine(FaceRecognitionService):
         if app is None:
             return []
 
-        faces = app.get(bgr_arr)
+        faces = await asyncio.to_thread(app.get, bgr_arr)
         results = []
         for face in faces:
             score = float(getattr(face, "det_score", 1.0))
@@ -147,7 +155,7 @@ class InsightFaceEngine(FaceRecognitionService):
         if app is None:
             return []
 
-        faces = app.get(bgr_arr)
+        faces = await asyncio.to_thread(app.get, bgr_arr)
         embeddings = []
         for face in faces:
             score = float(getattr(face, "det_score", 1.0))
@@ -175,7 +183,7 @@ class InsightFaceEngine(FaceRecognitionService):
         if app is None:
             return []
 
-        faces = app.get(bgr_arr)
+        faces = await asyncio.to_thread(app.get, bgr_arr)
         processed_faces = []
         for face in faces:
             score = float(getattr(face, "det_score", 1.0))
