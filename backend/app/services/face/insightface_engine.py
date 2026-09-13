@@ -86,7 +86,7 @@ class InsightFaceEngine(FaceRecognitionService):
                     allowed_modules=["detection", "recognition"],
                     providers=["CPUExecutionProvider"],
                 )
-                app.prepare(ctx_id=-1, det_size=(320, 320))
+                app.prepare(ctx_id=-1, det_size=(640, 640))
                 cls._app = app
                 cls._initialized = True
                 logger.info("InsightFace 'buffalo_s' CPU engine initialized successfully.")
@@ -120,7 +120,7 @@ class InsightFaceEngine(FaceRecognitionService):
             logger.error(f"Image decoding failed for payload of size {len(image_bytes)}: {str(e)}")
             raise AppException(f"Invalid or corrupted image format: {str(e)}", status_code=400)
 
-    def _downsample_bgr(self, bgr_arr: np.ndarray, max_dim: int = 800):
+    def _downsample_bgr(self, bgr_arr: np.ndarray, max_dim: int = 1280):
         """
         Downsamples large high-res images to a max edge dimension (800px) before detection.
         Prevents ONNX runtime memory spikes on 512MB RAM free tier instances while maintaining 100% face recognition accuracy.
