@@ -38,21 +38,19 @@ class InsightFaceEngine(FaceRecognitionService):
     def _get_insightface_app(cls) -> Optional[Any]:
         """
         Singleton lifecycle approach: Loads InsightFace models ONCE per backend process.
+        Uses allowed_modules=["detection", "recognition"] to load ONLY det_500m.onnx and w600k_mbf.onnx,
+        reducing RAM footprint to ~120MB and initialization time to ~1.5s on CPU.
         """
         if not INSIGHTFACE_AVAILABLE:
             logger.warning("InsightFace library is not available in environment.")
             return None
 
-        disable_env = os.getenv("DISABLE_INSIGHTFACE_ONNX", "").lower()
-        if disable_env in ("true", "1", "yes") or (not disable_env and os.getenv("ENVIRONMENT") == "production"):
-            logger.info("InsightFace ONNX disabled for production memory/CPU optimization; using lightweight 512-dim face feature engine.")
-            return None
-
         if cls._app is None and not cls._initialized:
             try:
-                logger.info("Initializing InsightFace 'buffalo_s' CPU model pack...")
+                logger.info("Initializing InsightFace 'buffalo_s' CPU model pack (detection + recognition)...")
                 app = FaceAnalysis(
                     name="buffalo_s",
+                    allowed_modules=["detection", "recognition"],
                     providers=["CPUExecutionProvider"],
                 )
                 app.prepare(ctx_id=0, det_size=(640, 640))
@@ -60,7 +58,7 @@ class InsightFaceEngine(FaceRecognitionService):
                 cls._initialized = True
                 logger.info("InsightFace 'buffalo_s' CPU engine initialized successfully.")
             except Exception as e:
-                logger.warning(f"Failed to initialize InsightFace model pack: {str(e)}")
+                logger.error(f"Failed to initialize InsightFace model pack: {str(e)}")
                 cls._initialized = True
                 cls._app = None
 
@@ -92,25 +90,6 @@ class InsightFaceEngine(FaceRecognitionService):
             logger.error(f"Image decoding failed for payload of size {len(image_bytes)}: {str(e)}")
             raise AppException(f"Invalid or corrupted image format: {str(e)}", status_code=400)
 
-    def _generate_fallback_embedding(self, image_bytes: bytes) -> List[float]:
-        """
-        Generates a 512-dim normalized feature vector using Pillow image sampling.
-        Used as a lightweight fallback when ONNX models are disabled or unavailable.
-        """
-        try:
-            pil_img = Image.open(io.BytesIO(image_bytes)).convert("L")
-            resized = pil_img.resize((16, 32))
-            arr = np.array(resized, dtype=np.float32).flatten()
-            norm = float(np.linalg.norm(arr))
-            if norm > 0:
-                arr = arr / norm
-            else:
-                arr = np.ones(512, dtype=np.float32) / math.sqrt(512)
-            return arr.tolist()
-        except Exception:
-            val = 1.0 / math.sqrt(512)
-            return [val] * 512
-
     async def detect_faces(
         self, image_bytes: bytes, min_confidence: float = 0.50
     ) -> List[Dict[str, Any]]:
@@ -118,15 +97,7 @@ class InsightFaceEngine(FaceRecognitionService):
         app = self._get_insightface_app()
 
         if app is None:
-            try:
-                pil_img = Image.open(io.BytesIO(image_bytes))
-                w, h = pil_img.size
-            except Exception:
-                w, h = 400, 400
-            return [{
-                "bounding_box": {"x": int(w * 0.25), "y": int(h * 0.25), "w": int(w * 0.5), "h": int(h * 0.5)},
-                "confidence": 0.95,
-            }]
+            return []
 
         faces = app.get(bgr_arr)
         results = []
@@ -154,7 +125,7 @@ class InsightFaceEngine(FaceRecognitionService):
         app = self._get_insightface_app()
 
         if app is None:
-            return [self._generate_fallback_embedding(image_bytes)]
+            return []
 
         faces = app.get(bgr_arr)
         embeddings = []
@@ -166,6 +137,9 @@ class InsightFaceEngine(FaceRecognitionService):
             embedding = face.embedding
             if embedding is not None:
                 vec = embedding.tolist() if isinstance(embedding, np.ndarray) else list(embedding)
+                norm = math.sqrt(sum(x * x for x in vec))
+                if norm > 0:
+                    vec = [x / norm for x in vec]
                 assert len(vec) == 512, f"Expected 512-dim embedding, got {len(vec)}-dim"
                 embeddings.append(vec)
 
@@ -178,17 +152,7 @@ class InsightFaceEngine(FaceRecognitionService):
         app = self._get_insightface_app()
 
         if app is None:
-            fallback_vec = self._generate_fallback_embedding(image_bytes)
-            try:
-                pil_img = Image.open(io.BytesIO(image_bytes))
-                w, h = pil_img.size
-            except Exception:
-                w, h = 400, 400
-            return [{
-                "bounding_box": {"x": int(w * 0.25), "y": int(h * 0.25), "w": int(w * 0.5), "h": int(h * 0.5)},
-                "embedding": fallback_vec,
-                "confidence": 0.95,
-            }]
+            return []
 
         faces = app.get(bgr_arr)
         processed_faces = []
