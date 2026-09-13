@@ -4,8 +4,19 @@ import { AuthModal } from '../components/auth/AuthModal'
 
 const AuthContext = createContext({})
 
-const envApiUrl = (import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000').trim().replace(/\/+$/, '')
-export const API_BASE_URL = envApiUrl.replace('localhost:8000', '127.0.0.1:8000')
+const getResolvedApiBaseUrl = () => {
+  const envUrl = import.meta.env.VITE_API_BASE_URL
+  if (envUrl && !envUrl.includes('localhost') && !envUrl.includes('127.0.0.1')) {
+    return envUrl.trim().replace(/\/+$/, '')
+  }
+  if (typeof window !== 'undefined' && window.location.hostname.includes('onrender.com')) {
+    return 'https://smartpicshare.onrender.com'
+  }
+  const fallbackUrl = (envUrl || 'http://127.0.0.1:8000').trim().replace(/\/+$/, '')
+  return fallbackUrl.replace('localhost:8000', '127.0.0.1:8000')
+}
+
+export const API_BASE_URL = getResolvedApiBaseUrl()
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
@@ -126,7 +137,11 @@ export const AuthProvider = ({ children }) => {
       const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
       const targetUrl = `${API_BASE_URL}${cleanEndpoint}`
       candidateUrls.push(targetUrl)
-      if (!targetUrl.includes('127.0.0.1:8000') && !targetUrl.includes('localhost:8000')) {
+      if (
+        typeof window !== 'undefined' &&
+        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') &&
+        !targetUrl.includes('127.0.0.1:8000')
+      ) {
         candidateUrls.push(`http://127.0.0.1:8000${cleanEndpoint}`)
       }
     }
@@ -144,7 +159,8 @@ export const AuthProvider = ({ children }) => {
       }
     }
 
-    throw lastError || new TypeError('Failed to fetch')
+    const detail = lastError?.message ? ` (${lastError.message})` : ''
+    throw new Error(`Connection error to API server at ${API_BASE_URL}${detail}`)
   }
 
   return (

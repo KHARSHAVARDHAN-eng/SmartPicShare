@@ -14,10 +14,12 @@ async def health_check(db: AsyncSession = Depends(get_db)):
     Checks database connection responsiveness.
     """
     db_status = "healthy"
+    db_error = None
     try:
         await db.execute(text("SELECT 1"))
-    except Exception:
+    except Exception as e:
         db_status = "unhealthy"
+        db_error = str(e)
 
     return {
         "status": "ok" if db_status == "healthy" else "degraded",
@@ -25,4 +27,5 @@ async def health_check(db: AsyncSession = Depends(get_db)):
         "version": settings.VERSION,
         "environment": settings.ENVIRONMENT,
         "database": db_status,
+        "db_error": db_error,
     }
