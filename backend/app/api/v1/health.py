@@ -16,8 +16,17 @@ async def health_check(db: AsyncSession = Depends(get_db)):
     """
     db_status = "healthy"
     db_error = None
+    existing_tables = []
     try:
         await db.execute(text("SELECT 1"))
+        bind = db.bind
+        if bind and bind.dialect.name == "sqlite":
+            table_res = await db.execute(text("SELECT name FROM sqlite_master WHERE type='table'"))
+        else:
+            table_res = await db.execute(
+                text("SELECT table_name FROM information_schema.tables WHERE table_schema='public'")
+            )
+        existing_tables = [row[0] for row in table_res.fetchall()]
     except Exception as e:
         db_status = "unhealthy"
         db_error = str(e)
@@ -55,6 +64,7 @@ async def health_check(db: AsyncSession = Depends(get_db)):
         "environment": settings.ENVIRONMENT,
         "database": db_status,
         "db_error": db_error,
+        "tables": existing_tables,
         "database_url_info": async_info,
         "sync_database_url_info": sync_info,
     }
